@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- SEO BASICO -->
+<meta name="description" content="Ledger es tu aplicación para registrar gastos y mantener tus finanzas al día. 
+Te permite proyectar tu economía a 6 meses, analizar consumos mediante gráficos por categoría, hacer seguimiento 
+de tus metas de ahorro y supervisar deudas en cuotas con alertas de vencimiento en la app y Google Calendar.">
+<meta name="keywords" content="ledger, finanzas personales, gestor de gastos, control de ingresos, ahorro, deudas, presupuesto, argentina, academia digital, mario maiolo">
+<meta name="author" content="Mario Maiolo - Academia Digital">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://ledgerdigital.netlify.app/">
+
+<!-- OPEN GRAPH para WhatsApp / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_AR">
+<meta property="og:site_name" content="LEDGER">
+<meta property="og:title" content="LEDGER | Tus cuentas, al día.">
+<meta property="og:description" content="Gestioná ingresos, gastos, ahorros y deudas con una interfaz minimalista y potente. Proyecciones, gráficos y cotizaciones del dólar en tiempo real.">
+<meta property="og:url" content="https://ledgerdigital.netlify.app/">
+<meta property="og:image" content="https://ledgerdigital.netlify.app/img/logo-full-hd.webp">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- TWITTER / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="LEDGER | Tus cuentas, al día.">
+<meta name="twitter:description" content="Tu gestor financiero personal minimalista por Academia Digital.">
+<meta name="twitter:image" content="https://ledgerdigital.netlify.app/img/logo-full-hd.webp">
+
+<!-- PWA iOS Extra -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LEDGER">
+<title>LEDGER | Tus cuentas, al día.</title>
+
+<!-- PWA CONFIG -->
+<link rel="manifest" href="manifest.json?v=2">
+<meta name="theme-color" content="#0A0A0A">
+<!-- ICONOS PWA / FAVICON - SIN FONDO - CRECIMIENTO -->
+<link rel="icon" href="favicon.ico?v=2" sizes="any">
+<link rel="icon" href="img/favicon.ico?v=2" sizes="any">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="img/logo-icon-192.png?v=2">
+<link rel="icon" type="image/png" sizes="512x512" href="img/logo-icon-512.png?v=2">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png?v=2">
+
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- FIREBASE SYNC -->
+<link rel="stylesheet" href="ledger.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="font-sans min-h-screen">
+
+<!-- TOP BAR -->
+<header class="sticky top-0 z-30 backdrop-blur-xl bg-[#FCFCFB]/80 border-b border-line">
+  <div class="max-w-[1440px] mx-auto pl-4 md:pl-6 lg:pl-8 pr-[calc(0.75rem+env(safe-area-inset-right,0px))] md:pr-6 h-[70px] flex items-center justify-between gap-3 lg:gap-6">
+    <div class="flex items-center gap-2 md:gap-3 shrink-0 ml-2 md:ml-4">
+      <img src="img/logo-full-hd.webp" alt="LEDGER" class="h-12 md:h-14 w-auto object-contain ml-0">
+
+      <div class="hidden xl:flex items-center gap-2.5 ml-4 pl-4 border-l border-line">
+        <div class="w-9 h-9 rounded-full bg-ink text-white grid place-items-center text-[13px] font-bold shadow-sm" id="userInitial">-</div>
+        <div class="leading-tight">
+          <p id="userNameDisplay" class="text-[13px] font-semibold leading-none">Sin usuario</p>
+          <p id="userEmailDisplay" class="text-[11px] text-[#6B6B6A] mt-0.5">—</p>
+        </div>
+      </div>
+    </div>
+
+        <!-- ACCESOS DESKTOP Y BOTON HAMBURGUESA MOBILE -->
+    <div class="flex items-center gap-3 sm:gap-3.5 md:gap-4 lg:gap-5 pr-0.5">
+      
+      <!-- NUBE + SALIR - SOLO ICONOS -->
+      <div class="hidden md:flex items-center gap-1.5 mr-1.5">
+        <button id="cloudSyncBtn" onclick="loginGoogle()" title="Conectar nube" class="hidden md:grid w-9 h-9 rounded-[10px] bg-[#F6F6F5] border border-line place-items-center hover:bg-white transition-colors text-ink/80">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+        </button>
+        <button id="cloudLogoutBtn" onclick="logoutCloud()" title="Salir" class="hidden w-9 h-9 rounded-[10px] bg-white border border-line place-items-center hover:bg-[#FFF5F5] hover:border-[#FECACA] hover:text-[#B91C1C] transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+      <div class="hidden md:flex items-center gap-1.5 p-1.5 rounded-[14px] bg-[#F6F6F5] border border-line">
+        <!-- Proyección -->
+        <button onclick="abrirProyeccionMes()" title="Proyección" class="w-8 h-8 rounded-[10px] bg-transparent hover:bg-black/5 text-ink grid place-items-center transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </button>
+        <!-- Gráficos -->
+        <button onclick="abrirModalGraficos()" title="Gráficos" class="w-8 h-8 rounded-[10px] bg-transparent hover:bg-black/5 text-ink grid place-items-center transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        </button>
+        <!-- Ahorro - usando tu img local -->
+        <button onclick="abrirModalAhorro()" title="Ahorro" class="w-8 h-8 rounded-[10px] bg-transparent hover:bg-black/5 text-ink grid place-items-center transition-colors">
+          <img src="img/ahorro.webp" alt="Ahorro" class="w-[18px] h-[18px] object-contain" onerror="this.src='img/ahorro.webp'" style="opacity:0.85; filter: brightness(0);">
+        </button>
+        <button onclick="abrirModalDeudas()" title="Deudas" class="flex items-center gap-2 p-2.5 rounded-xl bg-[#F6F6F5] text- font-medium">
+       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 9.5h20"/><path d="M6 14.5h4"/><path d="M12.5 14.5h2"/></svg></button>
+      </div>
+
+      <!-- Cotizaciones Botón - SIEMPRE VISIBLE -->
+      <div class="relative ml-1">
+        <button id="btnFx" onclick="toggleFxCard()" class="flex items-center gap-1.5 px-3.5 md:px-5 h-[36px] rounded-full bg-ink text-white border border-ink shadow-sm hover:bg-[#1A1A1A] transition-colors">
+          <span class="w-5 h-5 rounded-full bg-white text-ink grid place-items-center text-[10px] font-bold mono">$</span>
+          <span class="text-[12px] font-medium tracking-tight hidden sm:inline">Cotizaciones</span>
+          <svg id="fxChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ml-0.5 transition-transform"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <!-- CARD COTIZACIONES -->
+        <div id="fxCard" class="hidden fixed sm:absolute inset-x-4 sm:inset-x-auto sm:left-auto sm:right-0 top-[76px] sm:top-[48px] w-auto sm:w-[380px] card p-0 overflow-hidden shadow-[0_20px_60px_-12px_rgba(0,0,0,.25)] z-[60] max-w-[calc(100vw-32px)] sm:max-w-none">
+          <div class="p-5 pb-3 flex items-center justify-between border-b border-line">
+            <div><h3 class="text-[13px] font-semibold tracking-tight">Cotizaciones hoy</h3><p class="text-[10px] mono text-[#9A9A98] mt-0.5">Fuente: DolarAPI + Bluelytics</p></div>
+            <button onclick="toggleFxCard(false)" class="w-7 h-7 rounded-full bg-stone grid place-items-center hover:bg-line">✕</button>
+          </div>
+          <div class="p-3 space-y-2">
+            <div class="flex items-center justify-between p-3 rounded-[14px] bg-stone"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white border border-line grid place-items-center text-[11px] font-bold">US</div><div class="leading-none"><p class="text-[12px] font-medium">Dólar Oficial</p><p class="text-[10px] mono text-[#9A9A98] mt-1">BCRA</p></div></div><div class="text-right"><p class="text-[11px] mono text-[#9A9A98]">COMPRA / VENTA</p><p class="text-[12px] mono mt-1"><span id="usdOfCompra">—</span> / <span id="usdOfVenta" class="font-semibold">—</span></p></div></div>
+            <div class="flex items-center justify-between p-3 rounded-[14px] bg-ink text-white"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white text-ink grid place-items-center text-[11px] font-bold">$</div><div class="leading-none"><p class="text-[12px] font-medium">Dólar Blue</p><p class="text-[10px] mono text-white/60 mt-1">Informal</p></div></div><div class="text-right"><p class="text-[11px] mono text-white/60">COMPRA / VENTA</p><p class="text-[12px] mono mt-1"><span id="usdBlueCompra">—</span> / <span id="usdBlueVenta" class="font-semibold">—</span></p></div></div>
+            <div class="flex items-center justify-between p-3 rounded-[14px] bg-stone"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white border border-line grid place-items-center text-[11px] font-bold">MEP</div><div class="leading-none"><p class="text-[12px] font-medium">Dólar MEP</p><p class="text-[10px] mono text-[#9A9A98] mt-1">Bolsa</p></div></div><div class="text-right"><p class="text-[11px] mono text-[#9A9A98]">COMPRA / VENTA</p><p class="text-[12px] mono mt-1"><span id="usdMepCompra">—</span> / <span id="usdMepVenta" class="font-semibold">—</span></p></div></div>
+            <div class="h-px bg-line my-1"></div>
+            <div class="flex items-center justify-between p-3 rounded-[14px] bg-stone"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-[#003399] text-white grid place-items-center text-[11px] font-bold">€</div><div class="leading-none"><p class="text-[12px] font-medium">Euro Oficial</p><p class="text-[10px] mono text-[#9A9A98] mt-1">BNA</p></div></div><div class="text-right"><p class="text-[11px] mono text-[#9A9A98]">COMPRA / VENTA</p><p class="text-[12px] mono mt-1"><span id="eurOfCompra">—</span> / <span id="eurOfVenta" class="font-semibold">—</span></p></div></div>
+            <div class="flex items-center justify-between p-3 rounded-[14px] bg-stone"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white border border-line grid place-items-center text-[#003399] text-[11px] font-bold">€B</div><div class="leading-none"><p class="text-[12px] font-medium">Euro Blue</p><p class="text-[10px] mono text-[#9A9A98] mt-1">Informal</p></div></div><div class="text-right"><p class="text-[11px] mono text-[#9A9A98]">COMPRA / VENTA</p><p class="text-[12px] mono mt-1"><span id="eurBlueCompra">—</span> / <span id="eurBlueVenta" class="font-semibold">—</span></p></div></div>
+          </div>
+          <div class="px-5 py-3 bg-stone border-t border-line flex items-center gap-2.5"><button onclick="cargarCotizaciones()" class="text-[11px] font-medium px-2.5 py-1 rounded-full bg-white border border-line hover:border-ink">Actualizar</button><p id="fxTime" class="text-[11px] mono text-[#9A9A98]">Cargando...</p></div>
+        </div>
+      </div>
+
+      <div class="hidden md:flex items-center gap-1.5 p-1.5 rounded-[14px] bg-[#F6F6F5] border border-line">
+        <button onclick="abrirModalAgregarUsuario()" title="Agregar usuario" class="w-8 h-8 rounded-[10px] bg-white border border-line grid place-items-center hover:border-ink"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.6"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>
+        <button onclick="abrirModalCambiarUsuario()" title="Cambiar usuario" class="w-8 h-8 rounded-[10px] bg-transparent hover:bg-black/5 grid place-items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.6"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg></button>
+        <button onclick="abrirModalVerUsuario()" title="Ver usuario" class="w-8 h-8 rounded-[10px] bg-transparent hover:bg-black/5 grid place-items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.6"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button onclick="eliminarUsuarioActual()" title="Eliminar usuario" class="w-8 h-8 rounded-[10px] bg-transparent hover:bg-black/5 grid place-items-center text-[#FF3B30]"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+      </div>
+
+      <div class="hidden md:flex items-center gap-1.5 p-1.5 rounded-[14px] bg-[#F6F6F5] border border-line">
+        <button onclick="exportarExcel()" title="Exportar Excel" class="w-8 h-8 rounded-[10px] bg-transparent hover:bg-black/5 grid place-items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        <button onclick="exportarPDF()" title="Imprimir / PDF" class="w-8 h-8 rounded-[10px] bg-transparent hover:bg-black/5 grid place-items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.6"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+      </div>
+
+      <!-- BOTON COLABORAR - SIEMPRE VISIBLE FUERA -->
+      <button onclick="abrirModalColaborar()" title="Colaborar" class="w-9 h-9 rounded-full bg-white border border-line shadow-sm hover:bg-[#FFF5F5] text-[#FF3B30] grid place-items-center shrink-0"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+
+      <!-- BOTÓN MENÚ HAMBURGUESA - SOLO MÓVIL -->
+      <button onclick="toggleMobileMenu()" title="Menú" class="md:hidden w-10 h-10 rounded-xl bg-white border border-amber-400 grid place-items-center text-ink shrink-0">
+        <svg id="hamburgerIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PANEL DESPLEGABLE MENÚ MÓVIL -->
+   
+  <div id="mobileMenu" class="hidden md:hidden border-t border-line bg-white px-6 py-4 space-y-4 shadow-xl">
+    <div class="flex items-center gap-3 pb-3 border-b border-line">
+      <div class="w-9 h-9 rounded-full bg-ink text-white grid place-items-center text-[12px] font-medium" id="userInitialMobile">-</div>
+      <div class="leading-none overflow-hidden flex-1">
+        <p id="userNameDisplayMobile" class="text-[13px] font-semibold truncate">Sin usuario</p>
+        <p id="userEmailDisplayMobile" class="text-[11px] text-[#9A9A98] truncate">—</p>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="cloudLogoutBtnMobile" onclick="toggleMobileMenu(); logoutCloud()" title="Salir" class="hidden w-8 h-8 rounded-full bg-white border border-line grid place-items-center hover:bg-[#FFF5F5] hover:border-[#FECACA] hover:text-[#B91C1C] transition-colors">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+        <button id="cloudSyncBtnMobile" onclick="toggleMobileMenu(); loginGoogle()" title="Conectar nube" class="shrink-0 w-8 h-8 rounded-full bg-[#0A0A0A] text-white grid place-items-center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="grid grid-cols-4 gap-2">
+      <button onclick="toggleMobileMenu(); abrirProyeccionMes()" class="flex flex-col items-center gap-1 p-2.5 rounded-xl bg-[#F6F6F5] text-[10px] md:text-[11px] font-medium"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.6"><path d="M22 7l-8.5 8.5-4-4L2 19"/><path d="M16 7h6v6"/></svg>Proyección</button>
+      <button onclick="toggleMobileMenu(); abrirModalGraficos()" class="flex flex-col items-center gap-1 p-2.5 rounded-xl bg-[#F6F6F5] text-[10px] md:text-[11px] font-medium"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.85" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>Gráficos</button>
+      <button onclick="toggleMobileMenu(); abrirModalAhorro()" class="flex flex-col items-center gap-1 p-2.5 rounded-xl bg-[#F6F6F5] text-[10px] md:text-[11px] font-medium"><img src="img/ahorro.webp" alt="" class="w-[20px] h-[20px]" onerror="this.src='img/ahorro.webp'" style="filter: brightness(0); opacity:0.85;">Ahorro</button>
+      <button onclick="toggleMobileMenu(); abrirModalDeudas()" class="flex flex-col items-center gap-1 p-2.5 rounded-xl bg-[#F6F6F5] text-[10px] md:text-[11px] font-medium"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-opacity="0.9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 9.5h20"/><path d="M6 14.5h4"/><path d="M12.5 14.5h2"/></svg>Deudas</button>
+    </div>
+     <div class="grid grid-cols-2 gap-2">
+      <button onclick="toggleMobileMenu(); exportarExcel()" class="flex items-center gap-2 p-2.5 rounded-xl bg-stone text-[12px] font-medium"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar CSV</button>
+      <button onclick="toggleMobileMenu(); exportarPDF()" class="flex items-center gap-2 p-2.5 rounded-xl bg-stone text-[12px] font-medium"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir / PDF</button>
+      <button onclick="toggleMobileMenu(); abrirModalVerUsuario()" class="flex items-center gap-2 p-2.5 rounded-xl bg-stone text-[12px] font-medium"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Ver usuario</button>   
+      <button onclick="toggleMobileMenu(); eliminarUsuarioActual()" class="flex items-center gap-2 p-2.5 rounded-xl bg-stone text-[12px] font-medium text-red-600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Eliminar Usuario</button>
+      </div>
+    <div class="pt-2 border-t border-line flex gap-2">
+      <button onclick="toggleMobileMenu(); abrirModalCambiarUsuario()" class="btn-ghost flex-1 h-10 text-[12px] flex items-center justify-center gap-1.5"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8" cy="7" r="4"/><path d="M18 8l2 2-2 2"/><path d="M20 10H13"/></svg> Cambiar</button>
+      <button onclick="toggleMobileMenu(); abrirModalAgregarUsuario()" class="btn-primary flex-1 h-10 text-[12px] flex items-center justify-center gap-1.5"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg> Nuevo </button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1280px] mx-auto px-4 md:px-8 py-6 md:py-10">
+  
+  <!-- STATS -->
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-8">
+    <div class="md:col-span-4 card p-5 md:p-7">
+      <div class="flex justify-between items-start">
+        <p class="text-[11px] font-semibold tracking-widest text-[#9A9A98]">INGRESO MENSUAL</p>
+        <span class="w-6 h-6 rounded-full bg-stone grid place-items-center text-[11px]">↗</span>
+      </div>
+      <p id="resumen-sueldo" class="mono text-[24px] md:text-[28px] font-[500] tracking-[-0.03em] mt-3 md:mt-5">$ 0,00</p>
+      
+      <!-- AVISO SUTIL DE SUELDO EN CERO -->
+      <div id="aviso-sueldo-zero" class="hidden mt-2 text-[11px] text-amber-600 bg-amber-50 border border-amber-200/60 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+        <span>⚠️</span> <span>No olvides cargar tu ingreso mensual.</span>
+      </div>
+
+      <div class="mt-4 md:mt-5 flex gap-2">
+        <input id="input-sueldo" type="number" placeholder="0" class="input mono w-full h-10 px-4 text-[14px]">
+        <button onclick="guardarSueldo()" class="btn-primary h-10 px-4 text-[13px] whitespace-nowrap">Guardar</button>
+      </div>
+    </div>
+
+    <div class="md:col-span-4 card p-5 md:p-7">
+      <p class="text-[11px] font-semibold tracking-widest text-[#9A9A98]">TOTAL GASTADO</p>
+      <p id="resumen-gastos" class="mono text-[24px] md:text-[28px] font-[500] tracking-[-0.03em] mt-3 md:mt-5">$ 0,00</p>
+      <div class="mt-5 md:mt-6 flex items-center gap-2 text-[12px] text-[#9A9A98]">
+        <div class="h-px flex-1 bg-line"></div>
+        <span id="count-gastos">0 movimientos</span>
+      </div>
+    </div>
+
+    <div id="card-saldo-container" class="md:col-span-4 card p-5 md:p-7 bg-ink text-white border-ink relative overflow-hidden">
+      <div class="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-white/[0.06]"></div>
+      <p class="text-[11px] font-semibold tracking-widest text-white/50 relative">SALDO DISPONIBLE</p>
+      <p id="resumen-saldo" class="mono text-[24px] md:text-[28px] font-[500] tracking-[-0.03em] mt-3 md:mt-5 relative">$ 0,00</p>
+      <p id="saldo-detalle" class="mt-5 md:mt-6 text-[12px] text-white/50 relative">Seleccioná un usuario</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+    <!-- FORM -->
+    <div class="lg:col-span-4 card p-5 md:p-7 lg:sticky lg:top-[88px]">
+      <div class="flex items-center justify-between mb-5 md:mb-6">
+        <h2 id="form-titulo" class="text-[14px] font-semibold tracking-[-0.01em]">Nuevo movimiento</h2>
+        <button id="btn-cancelar-edit" onclick="cancelarEdicion()" class="hidden text-[12px] underline decoration-line underline-offset-4 hover:decoration-ink">Cancelar</button>
+      </div>
+
+      <form id="gasto-form" onsubmit="guardarGasto(event)" class="space-y-4">
+        <input type="hidden" id="gasto-id-editando">
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-medium tracking-wide text-[#6B6B6A]">DESCRIPCIÓN</label>
+          <input id="descripcion" type="text" required placeholder="Ej. Supermercado, Alquiler..." class="input w-full h-11 px-4 text-[14px]">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-medium tracking-wide text-[#6B6B6A]">MONTO</label>
+            <input id="monto" type="number" step="0.01" required placeholder="0,00" oninput="validarMontoDisponible(this)" class="input mono w-full h-11 px-4 text-[14px]">
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-medium tracking-wide text-[#6B6B6A]">FECHA</label>
+            <input id="fecha" type="date" required class="input w-full h-11 px-4 text-[13px]">
+          </div>
+        </div>
+        
+        <!-- AVISO DE SALDO NEGATIVO EN TIEMPO REAL -->
+        <div id="alerta-saldo-negativo" class="hidden text-[11px] text-red-600 bg-red-50 border border-red-200/60 rounded-xl p-2.5 flex items-center gap-2">
+          <span>⚠️</span> <span id="texto-alerta-negativa">Este gasto dejará tu saldo disponible en negativo.</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-medium tracking-wide text-[#6B6B6A]">TIPO</label>
+            <select id="tipo" onchange="toggleCuotas()" class="input w-full h-11 px-3 text-[13px]">
+              <option value="unico">Único</option>
+              <option value="fijo">Fijo mensual</option>
+              <option value="cuotas">En cuotas</option>
+            </select>
+          </div>
+          <div id="campo-cuotas" class="space-y-1.5 hidden">
+            <label class="text-[11px] font-medium tracking-wide text-[#6B6B6A]">CUOTAS</label>
+            <input id="cuotas" type="number" min="1" placeholder="12" class="input mono w-full h-11 px-4 text-[14px]">
+          </div>
+
+        </div>
+
+        <!-- BANNER INFO GOOGLE CALENDAR - Aparece solo si es cuotas o fijo -->
+        <div id="calendarInfoBanner" class="hidden rounded-[14px] bg-[#FFF8E1] border border-[#FFE082] p-3.5 flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-white border border-[#FFE082] grid place-items-center shrink-0 text-[14px]">📅</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[12px] font-semibold text-ink leading-tight">Recordatorio de vencimiento</p>
+            <p id="calendarInfoText" class="text-[11px] leading-[1.4] text-[#7A5C1F] mt-1">
+              Este movimiento es en cuotas. ¿Querés agendar la fecha de vencimiento?
+            </p>
+            <div class="flex flex-wrap items-center gap-2 mt-3">
+              <button type="button" onclick="agendarVencimientoActualEnCalendar()" class="h-8 px-3.5 rounded-full bg-ink text-white text-[11px] font-medium hover:bg-[#1A1A1A] flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                Agendar
+              </button>
+              <button type="button" onclick="cerrarBannerCalendar()" class="h-8 px-3 rounded-full bg-white border border-line text-[11px] hover:bg-stone">Después</button>
+            </div>
+            <p class="text-[10px] mono text-[#9A8A6A] mt-2">Tip: también podés agendarlo cuando quieras desde el icono 📅 en la lista.</p>
+          </div>
+          <button type="button" onclick="cerrarBannerCalendar()" class="w-6 h-6 grid place-items-center text-[#9A8A6A] hover:text-ink shrink-0">✕</button>
+        </div>
+
+        <button id="btn-submit" type="submit" class="btn-primary w-full h-11 text-[14px] mt-2">Agregar movimiento</button>
+        <p class="text-[11px] text-center text-[#9A9A98] pt-1">Datos separados por usuario.</p>
+      </form>
+    </div>
+
+    <!-- TABLE -->
+    <div class="lg:col-span-8 card flex flex-col h-full max-h-[calc(100vh-140px)] lg:sticky lg:top-[88px] overflow-hidden">
+      <div class="p-5 md:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-2.5">
+        <h2 class="text-[14px] font-semibold tracking-[-0.01em]">Historial — <span id="historial-usuario" class="text-[#9A9A98]">—</span></h2>
+        <button onclick="abrirTourInfoManual()" title="Ver guía de iconos" class="flex items-center gap-1.5 pl-1 pr-2.5 h-[28px] rounded-full bg-[#F6F6F5] border border-[#E8E8E6] hover:border-ink hover:bg-white transition-all group shadow-[0_1px_2px_rgba(0,0,0,.04)]">
+          <span class="w-5 h-5 rounded-full bg-ink text-white grid place-items-center text-[10px] font-bold leading-none">i</span>
+          <span class="text-[12px] font-medium tracking-wide text-[#6B6B6A] group-hover:text-ink">Info</span>
+        </button>
+      </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <input id="filtro" oninput="cargarDatos()" placeholder="Filtrar movimientos..." class="input h-9 px-3 flex-1 sm:w-48 text-[13px]">
+          <button onclick="forzarLimpiezaUnicosAhora()" title="Borrar gastos únicos del mes (mantiene fijos y cuotas) - Se sincroniza con Firebase" class="shrink-0 w-9 h-9 rounded-[12px] bg-[#FFF7ED] border border-[#FFEDD5] text-[#C2410C] grid place-items-center hover:bg-[#FFEDD5] hover:border-[#FDBA74] transition-colors group">
+            <span class="text-[14px] group-hover:rotate-12 transition-transform">🧹</span>
+          </button>
+        </div>
+      </div>
+      <!-- CONTENEDOR CON SCROLL DESLIZABLE -->
+      <div class="overflow-y-auto flex-1 w-full">
+        <table class="w-full min-w-[500px]">
+          <thead class="border-y border-line bg-[#FCFCFB] sticky top-0 z-10">
+            <tr class="text-left">
+              <th class="py-3 pl-5 md:pl-7 pr-3">Fecha</th>
+              <th class="py-3 px-3">Descripción</th>
+              <th class="py-3 px-3">Tipo</th>
+              <th class="py-3 px-3 text-right">Monto</th>
+              <th class="py-3 pr-5 md:pr-7 pl-3 text-right"></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-gastos" class="divide-y divide-line/60"></tbody>
+        </table>
+
+      <!-- TOUR ONBOARDING PRIMER PRODUCTO --->
+<div id="tour-productos" class="hidden mx-5 md:mx-7 mb-5">
+  <div class="tour-bubble relative mt-3">
+    <div class="flex justify-between items-start gap-3 mb-3">
+      <div>
+        <p class="text-[12px] font-semibold tracking-widest text-white/60">¡TU PRIMER MOVIMIENTO! 🎉</p>
+        <p class="text-[12px] font-medium mt-1 leading-tight">Así funcionan los iconos de cada fila:</p>
+      </div>
+      <button onclick="cerrarTourProductosManual()" class="w-7 h-7 rounded-full bg-white/10 grid place-items-center text-white hover:bg-white/20 transition-colors">✕</button>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <div class="flex items-center gap-2.5 bg-white/10 rounded-[12px] px-3 py-2.5">
+        <div class="w-8 h-8 rounded-full bg-white grid place-items-center text-[13px] shrink-0">📅</div>
+        <div class="min-w-0"><p class="text-[12px] font-medium leading-none">Calendario</p><p class="text-[11px] text-white/60 mt-1 leading-tight">Añade recordatorio a Google Calendar</p></div>
+      </div>
+      <div class="flex items-center gap-2.5 bg-white/10 rounded-[12px] px-3 py-2.5">
+        <div class="w-8 h-8 rounded-full bg-white grid place-items-center text-[13px] text-black font-bold shrink-0">✓</div>
+        <div class="min-w-0"><p class="text-[12px] font-medium leading-none">Pagar cuota</p><p class="text-[11px] text-white/60 mt-1 leading-tight">Solo en productos en cuotas, descuenta 1 cuota con cada click</p></div>
+      </div>
+      <div class="flex items-center gap-2.5 bg-white/10 rounded-[12px] px-3 py-2.5">
+        <div class="w-8 h-8 rounded-full bg-white grid place-items-center text-[13px] text-black shrink-0">↗</div>
+        <div class="min-w-0"><p class="text-[12px] font-medium leading-none">Editar</p><p class="text-[11px] text-white/60 mt-1 leading-tight">Modifica descripción, monto o fecha</p></div>
+      </div>
+      <div class="flex items-center gap-2.5 bg-white/10 rounded-[12px] px-3 py-2.5">
+        <div class="w-8 h-8 rounded-full bg-white text-black grid place-items-center text-[13px] font-bold shrink-0">✕</div>
+        <div class="min-w-0"><p class="text-[12px] font-medium leading-none">Eliminar</p><p class="text-[11px] text-white/60 mt-1 leading-tight">Borra el movimiento definitivamente</p></div>
+      </div>
+    </div>
+    <button onclick="cerrarTourProductos()" class="mt-4 w-full h-10 rounded-full bg-white text-ink text-[13px] font-medium hover:bg-stone transition-colors">¡Entendido! No volver a mostrar</button>
+  </div>
+</div>
+
+<div id="empty-state" class="py-16 text-center">
+        <p class="text-[13px] text-[#9A9A98]">Creá o seleccioná un usuario para empezar.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- FLOATING BUTTONS -->
+<div class="fixed top-[65%] right-0 -translate-y-1/2 z-40 flex flex-col gap-3 items-end">
+  <button onclick="toggleCalculadora()" id="btn-calc-fab" title="Calculadora" class="fab w-14 h-14 rounded-full bg-[#0A0A0A] text-white grid place-items-center hover:bg-black hover:scale-[1.05] active:scale-[.95] transition-all shadow-[0_8px_24px_rgba(0,0,0,.25)]">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="16" y1="18" x2="16" y2="18"/>
+    </svg>
+  </button>
+</div>
+
+<!-- CALCULADORA FLOTANTE -->
+<div id="floatingCalc" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:top-1/2 md:bottom-auto md:left-auto md:right-6 md:translate-x-0 md:-translate-y-1/2 z-40 hidden">
+  <div class="card w-[300px] sm:w-[320px] overflow-hidden shadow-[0_24px_64px_-16px_rgba(0,0,0,.3)]">
+    <div class="p-4 flex justify-between items-center bg-[#0A0A0A] text-white">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-full bg-white/10 grid place-items-center">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/></svg>
+        </div>
+        <p class="text-[12px] font-bold tracking-wide">CALCULADORA</p>
+      </div>
+      <div class="flex gap-1.5">
+        <button onclick="calcClear()" title="Borrar todo" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center text-[11px] font-bold transition-colors">C</button>
+        <button onclick="calcBackspace()" title="Borrar un dígito" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12H8"/><path d="M12 5L3 12l9 7"/><path d="M21 12v-2"/></svg>
+        </button>
+        <button onclick="toggleCalculadora()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center">✕</button>
+      </div>
+    </div>
+    <div class="p-4">
+      <div id="calcScreen" class="mono text-[28px] sm:text-[32px] font-medium tracking-[-0.03em] text-right py-4 px-3 bg-stone rounded-[14px] mb-3 min-h-[64px]">0</div>
+      <div class="grid grid-cols-4 gap-2">
+        <button onclick="calcAppend('7')" class="h-12 rounded-xl bg-white border border-line mono font-medium">7</button>
+        <button onclick="calcAppend('8')" class="h-12 rounded-xl bg-white border border-line mono font-medium">8</button>
+        <button onclick="calcAppend('9')" class="h-12 rounded-xl bg-white border border-line mono font-medium">9</button>
+        <button onclick="calcAppend('/')" class="h-12 rounded-xl bg-stone font-medium">÷</button>
+        <button onclick="calcAppend('4')" class="h-12 rounded-xl bg-white border border-line mono font-medium">4</button>
+        <button onclick="calcAppend('5')" class="h-12 rounded-xl bg-white border border-line mono font-medium">5</button>
+        <button onclick="calcAppend('6')" class="h-12 rounded-xl bg-white border border-line mono font-medium">6</button>
+        <button onclick="calcAppend('*')" class="h-12 rounded-xl bg-stone font-medium">×</button>
+        <button onclick="calcAppend('1')" class="h-12 rounded-xl bg-white border border-line mono font-medium">1</button>
+        <button onclick="calcAppend('2')" class="h-12 rounded-xl bg-white border border-line mono font-medium">2</button>
+        <button onclick="calcAppend('3')" class="h-12 rounded-xl bg-white border border-line mono font-medium">3</button>
+        <button onclick="calcAppend('-')" class="h-12 rounded-xl bg-stone font-medium">−</button>
+        <button onclick="calcAppend('0')" class="h-12 rounded-xl bg-white border border-line mono font-medium">0</button>
+        <button onclick="calcAppend('.')" class="h-12 rounded-xl bg-white border border-line mono font-medium">.</button>
+        <button onclick="calcAppend('00')" class="h-12 rounded-xl bg-white border border-line mono text-[13px]">00</button>
+        <button onclick="calcAppend('+')" class="h-12 rounded-xl bg-stone font-medium">+</button>
+        <button onclick="calcCalculate()" class="h-12 rounded-xl bg-ink text-white font-medium col-span-4 mt-1">= Calcular</button>
+        <button onclick="usarResultadoCalc()" class="h-10 rounded-xl bg-white border border-dashed border-line text-[12px] col-span-4">Usar resultado en monto →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BIENVENIDA -->
+<div id="modalBienvenida" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-[#0A0A0A]/60 backdrop-blur-md"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[94%] sm:w-[92%] max-w-[520px] max-h-[92vh] overflow-y-auto bg-white rounded-[20px] sm:rounded-[20px] shadow-[0_24px_64px_-16px_rgba(0,0,0,.5)]">
+    <!-- HEADER NEGRO CON NUEVO ICONO -->
+    <div class="sticky top-0 z-10 bg-[#0A0A0A] px-5 sm:px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <img src="img/growth_icon_transparent.png" alt="LEDGER Growth" class="w-11 h-11 rounded-[12px] object-contain bg-white/5 p-1" onerror="this.src='img/logo-icon.webp'">
+        <div class="leading-tight">
+          <p class="text-white font-bold text-[15px] tracking-wide">LEDGER</p>
+          <p class="text-white/70 text-[13px]">Tus cuentas, al día.</p>
+        </div>
+      </div>
+      <button onclick="document.getElementById('modalBienvenida').classList.add('hidden')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-items-center text-[16px] transition-colors">✕</button>
+    </div>
+
+    <!-- BODY -->
+    <div class="p-5 sm:p-7">
+      <div class="text-center mb-6">
+        <h3 class="text-[22px] sm:text-[24px] font-bold tracking-tight">Bienvenido a LEDGER</h3>
+        <p class="text-[11px] sm:text-[12px] text-[#6B6B6A] mt-2 leading-[1.4] px-2">Controlá tu crecimiento financiero.<br>Elegí cómo querés guardar tus datos.</p>
+      </div>
+      
+      <form onsubmit="handleBienvenidaSubmit(event)" class="space-y-5">
+        <div class="space-y-3">
+          <label class="text-[13px] font-semibold tracking-wide text-[#0A0A0A]">Preferencia de sincronización</label>
+          <!-- EN MOBILE: 1 COLUMNA, EN DESKTOP: 2 COLUMNAS -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+            <!-- NUBE - RECOMENDADO -->
+            <label id="cardSyncCloud" class="relative flex sm:flex-col flex-row items-center sm:items-start gap-4 sm:gap-3 p-4 sm:p-4 rounded-[16px] border-2 border-[#0A0A0A] bg-white cursor-pointer transition-all">
+              <span class="absolute -top-2.5 left-4 bg-[#0A0A0A] text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide">RECOMENDADO</span>
+              <input type="radio" name="syncPref" value="cloud" checked class="absolute top-3 right-3 w-5 h-5 accent-black" onchange="updateSyncCards()">
+              <div class="flex items-center gap-3 mt-2 sm:mt-3 w-full sm:w-auto">
+                <div class="w-10 h-10 sm:w-10 sm:h-10 rounded-full bg-[#F6F6F5] grid place-items-center shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="1.8"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                </div>
+                <div class="leading-tight">
+                  <p class="text-[14px] sm:text-[13px] font-bold">NUBE</p>
+                  <p class="text-[12px] sm:text-[11px] text-[#6B6B6A] font-medium">AUTOMÁTICA</p>
+                </div>
+              </div>
+              <div class="hidden sm:block text-[12px] leading-[1.4] text-[#6B6B6A] space-y-0.5">
+                <p>• Sincronización automática</p>
+                <p>• Respaldo seguro</p>
+                <p>• Acceso desde cualquier dispositivo</p>
+              </div>
+              <div class="sm:hidden text-[10px] text-[#6B6B6A] ml-auto pr-7">+Beneficios</div>
+            </label>
+            <!-- LOCAL -->
+            <label id="cardSyncLocal" class="relative flex sm:flex-col flex-row items-center sm:items-start gap-4 sm:gap-3 p-4 sm:p-4 rounded-[16px] border border-[#E5E5E3] bg-[#FAFAF8] cursor-pointer transition-all">
+              <input type="radio" name="syncPref" value="local" class="absolute top-3 right-3 w-5 h-5 accent-black" onchange="updateSyncCards()">
+              <div class="flex items-center gap-3 mt-2 sm:mt-3 w-full sm:w-auto">
+                <div class="w-10 h-10 rounded-full bg-white border border-[#E5E5E3] grid place-items-center shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9A9A98" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <div class="leading-tight">
+                  <p class="text-[14px] sm:text-[13px] font-bold text-[#6B6B6A]">LOCAL</p>
+                  <p class="text-[12px] sm:text-[11px] text-[#9A9A98] font-medium">ALMACENAMIENTO</p>
+                </div>
+              </div>
+              <div class="hidden sm:block text-[12px] leading-[1.4] text-[#6B6B6A]">
+                <p>Datos privados solo en este dispositivo</p>
+                <p class="mt-1.5 font-semibold text-[#0A0A0A]">No se sincronizan</p>
+              </div>
+              <div class="sm:hidden text-[10px] text-[#9A9A98] ml-auto pr-7">Datos solo este equipo</div>
+            </label>
+          </div>
+          <!-- Detalle expandible solo mobile -->
+          <div id="mobileCloudDetail" class="sm:hidden mt-3 p-3 rounded-[12px] bg-[#F6F6F5] border border-line text-[12px] text-[#6B6B6A] leading-[1.4]">
+            <p class="font-semibold text-ink mb-1">Nube automática incluye:</p>
+            <p>• Sincronización automática <br>• Respaldo seguro <br>• Acceso desde cualquier dispositivo</p>
+          </div>
+        </div>
+
+        <!-- NOMBRE SOLO PARA LOCAL - OCULTO POR DEFECTO -->
+        <div id="localNameWrapper" class="space-y-2 hidden">
+          <label class="text-[13px] font-semibold tracking-wide text-[#0A0A0A]">Nombre de tu perfil</label>
+          <input id="welcomeUserName" type="text" placeholder="Ej. Personal / Negocio / Familia" class="w-full h-[48px] px-4 text-[15px] rounded-[12px] border border-[#E5E5E3] bg-[#FAFAF8] focus:bg-white focus:border-[#0A0A0A] focus:outline-none transition-colors">
+          <p class="text-[12px] text-[#9A9A98] px-1">Se usará solo en este dispositivo.</p>
+        </div>
+
+        <button id="btnBienvenida" type="submit" class="w-full h-[52px] rounded-full bg-white border border-[#E5E5E3] text-[#0A0A0A] text-[15px] font-semibold hover:bg-[#FAFAF8] transition-colors flex items-center justify-center gap-3 shadow-sm">
+          <svg width="22" height="22" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          <span>Continuar con Google</span>
+        </button>
+        <p class="text-[12px] text-center text-[#9A9A98]">Tus datos estarán seguros y respaldados.</p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SYNC NUBE - REEMPLAZA CONFIRM NATIVO - VERSION FIXED -->
+<div id="modalSyncNube" class="fixed inset-0 z-[80] hidden items-center justify-center p-4">
+  <div id="modalSyncNubeBackdrop" class="absolute inset-0 bg-[#0A0A0A]/50 backdrop-blur-[6px]"></div>
+  <div class="relative w-[92%] max-w-[400px] bg-white rounded-[24px] shadow-[0_24px_64px_-12px_rgba(0,0,0,.4)] overflow-hidden border border-line z-10">
+    <!-- Header -->
+    <div class="px-6 pt-6 pb-2 flex items-start gap-4">
+      <div class="w-11 h-11 rounded-[14px] bg-[#E8F5E9] border border-[#C8E6C9] grid place-items-center text-[#2E7D32] shrink-0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><polyline points="12 13 12 17"/><polyline points="9 14 12 17 15 14"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-[15px] font-semibold tracking-tight leading-tight">Datos encontrados en la nube</h3>
+        <p id="modalSyncNubeText" class="text-[12.5px] text-[#6B6B6A] leading-[1.45] mt-1.5">Tenés <b class="text-ink">1 usuario</b> guardado en la nube. ¿Qué querés hacer?</p>
+      </div>
+    </div>
+    <!-- Body -->
+    <div class="px-6 py-4">
+      <div class="rounded-[14px] bg-stone border border-line p-3.5 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-white border border-line grid place-items-center text-[12px]">☁️</div>
+        <div class="flex-1">
+          <p class="text-[12px] font-medium">Sincronización disponible</p>
+          <p class="text-[10px] mono text-[#9A9A98]">ledgerapp-1f5fc • Firebase</p>
+        </div>
+        <div class="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse"></div>
+      </div>
+    </div>
+    <!-- Actions -->
+    <div class="px-3 pb-3 flex gap-2">
+      <button type="button" id="btnSyncKeepLocal" class="flex-1 h-[42px] rounded-full bg-white border border-line text-[13px] font-medium hover:bg-stone transition-colors cursor-pointer">Mantener lo local</button>
+      <button type="button" id="btnSyncLoadCloud" class="flex-1 h-[42px] rounded-full bg-ink text-white text-[13px] font-medium hover:bg-[#1A1A1A] transition-colors cursor-pointer">Cargar nube</button>
+    </div>
+    <p class="text-[10px] text-center text-[#9A9A98] pb-4 px-6">Cancelar = mantiene lo local y lo sube a la nube</p>
+  </div>
+</div>
+
+<!-- MODAL DESCONECTAR NUBE - AVISO PERDIDA SINCRONIZACION -->
+<div id="modalDesconectarNube" class="fixed inset-0 z-[85] hidden items-center justify-center p-4">
+  <div id="modalDesconectarBackdrop" class="absolute inset-0 bg-[#0A0A0A]/60 backdrop-blur-[6px]"></div>
+  <div class="relative w-[92%] max-w-[420px] bg-white rounded-[24px] shadow-[0_24px_64px_-12px_rgba(0,0,0,.5)] overflow-hidden border border-line z-10 animate-[scaleIn_.22s_ease]">
+    <!-- Header negro estilo ledger -->
+    <div class="bg-[#0A0A0A] px-5 py-4 flex items-start justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-[#B91C1C] grid place-items-center shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
+        </div>
+        <div class="leading-tight">
+          <p class="text-white font-bold text-[13px] tracking-wide">Desconectar cuenta</p>
+          <p class="text-white/60 text-[11px] mt-0.5">Perderás la sincronización</p>
+        </div>
+      </div>
+      <button onclick="cerrarModalDesconectar()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-items-center text-[13px] transition-colors">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="px-6 pt-5 pb-4">
+      <h3 class="text-[16px] font-semibold tracking-tight leading-tight">¿Seguro que querés desconectar?</h3>
+      <p class="text-[13px] text-[#3A3A39] leading-[1.5] mt-2">Vas a salir de <b id="desconectarEmail" class="text-ink">tu cuenta</b> en este dispositivo.</p>
+
+      <div class="mt-4 rounded-[16px] bg-[#FFF8F0] border border-[#FFE4CC] p-3.5 flex gap-3">
+        <div class="w-8 h-8 rounded-full bg-white border border-[#FFE4CC] grid place-items-center text-[14px] shrink-0">⚠️</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-[12px] font-semibold text-[#9A3412] leading-tight">Qué va a pasar:</p>
+          <ul class="mt-2 space-y-1.5">
+            <li class="flex items-start gap-2 text-[11.5px] text-[#7C2D12] leading-[1.35]"><span class="mt-0.5 w-1 h-1 rounded-full bg-[#EA580C] shrink-0"></span><span>Se cortará la <b>sincronización automática</b> entre dispositivos.</span></li>
+            <li class="flex items-start gap-2 text-[11.5px] text-[#7C2D12] leading-[1.35]"><span class="mt-0.5 w-1 h-1 rounded-full bg-[#EA580C] shrink-0"></span><span>Tus datos permanecerán <b>solo en este dispositivo</b> (modo local).</span></li>
+            <li class="flex items-start gap-2 text-[11.5px] text-[#7C2D12] leading-[1.35]"><span class="mt-0.5 w-1 h-1 rounded-full bg-[#EA580C] shrink-0"></span><span>Podés reconectar cuando quieras y volver a sincronizar.</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-3.5 rounded-[14px] bg-stone border border-line p-3 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-ink text-white grid place-items-center text-[11px] font-bold shrink-0" id="desconectarInitial">-</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-[12px] font-medium truncate" id="desconectarName">Cuenta conectada</p>
+          <p class="text-[10px] mono text-[#9A9A98] truncate">Datos respaldados en la nube • Firebase</p>
+        </div>
+        <div class="w-2 h-2 rounded-full bg-[#22C55E] shrink-0"></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="px-3 pb-4 flex gap-2">
+      <button type="button" onclick="cerrarModalDesconectar()" class="flex-1 h-[44px] rounded-full bg-white border border-line text-[13px] font-medium hover:bg-stone transition-colors">Cancelar</button>
+      <button type="button" onclick="confirmarDesconectarNube()" class="flex-1 h-[44px] rounded-full bg-[#B91C1C] text-white text-[13px] font-medium hover:bg-[#991B1B] transition-colors flex items-center justify-center gap-1.5">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Sí, desconectar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BASE TEMPLATE -->
+<div id="modalUsuarios" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-[#0A0A0A]/30 backdrop-blur-sm" onclick="cerrarModalUsuarios()"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-[560px] card p-0 overflow-hidden shadow-[0_24px_64px_-24px_rgba(0,0,0,.4)]">
+    <div class="p-6 md:p-7 flex justify-between items-center border-b border-line">
+      <h3 class="text-[15px] font-semibold">Gestión de usuarios</h3>
+      <button onclick="cerrarModalUsuarios()" class="w-8 h-8 grid place-items-center rounded-full bg-stone">✕</button>
+    </div>
+    <div class="p-4 space-y-3 max-h-[60vh] overflow-auto" id="lista-usuarios-modal"></div>
+    <div class="p-4 border-t border-line flex gap-2">
+      <button onclick="abrirModalAgregarUsuario()" class="btn-primary flex-1 h-11 text-[13px]">+ Nuevo usuario</button>
+      <button onclick="cerrarModalUsuarios()" class="btn-ghost flex-1 h-11 text-[13px]">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AGREGAR USUARIO - NUEVA LOGICA V2 -->
+<div id="modalAgregarUsuario" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-[#0A0A0A]/60 backdrop-blur-md" onclick="cerrarModalAgregarUsuario()"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-[380px] max-h-[86vh] overflow-y-auto bg-white rounded-[18px] shadow-[0_24px_64px_-16px_rgba(0,0,0,.5)] border border-line">
+    <!-- HEADER -->
+    <div class="sticky top-0 z-10 bg-[#0A0A0A] px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-[9px] bg-white grid place-items-center text-[#0A0A0A]"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="leading-tight">
+          <p class="text-white font-bold text-[12.5px] tracking-wide">Nuevo usuario</p>
+          <p id="modalAgregarSubtitle" class="text-white/60 text-[10px] mt-0">Elige una opción</p>
+        </div>
+      </div>
+      <button onclick="cerrarModalAgregarUsuario()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-items-center text-[11px] transition-colors">✕</button>
+    </div>
+
+    <div class="p-4">
+      <!-- ESTADO: NO SINCRONIZADO - COMPACTO -->
+      <div id="modalStateNoSync" class="hidden">
+        <h3 class="text-[15px] font-bold tracking-tight text-center leading-tight">¿Cómo querés crear el usuario?</h3>
+        <p class="text-[11px] text-[#6B6B6A] text-center mt-1 leading-[1.4]">Sincronizado = en la nube. Local = solo en este dispositivo.</p>
+        
+        <div class="mt-4 space-y-2.5">
+          <!-- BOTON GOOGLE -->
+          <button onclick="accionLoginGoogleDesdeModal()" class="w-full group relative overflow-hidden rounded-[12px] border border-[#0A0A0A] bg-[#0A0A0A] text-white p-3 flex items-center gap-2.5 hover:bg-[#1A1A1A] transition-all text-left">
+            <div class="w-9 h-9 rounded-[9px] bg-white grid place-items-center shrink-0">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-semibold leading-none">Iniciar sesión con Google</p>
+              <p class="text-[10px] text-white/60 mt-1">Sincroniza automáticamente</p>
+            </div>
+            <div class="w-6 h-6 rounded-full bg-white/10 grid place-items-center group-hover:bg-white/20 transition-colors text-[12px]">→</div>
+          </button>
+
+          <div class="flex items-center gap-3 py-1">
+            <div class="h-px bg-line flex-1"></div>
+            <span class="text-[10px] mono tracking-[0.15em] text-[#9A9A98]">O</span>
+            <div class="h-px bg-line flex-1"></div>
+          </div>
+
+          <!-- BOTON LOCAL -->
+          <button id="btnMostrarFormLocalNoSync" onclick="mostrarFormLocal()" class="w-full rounded-[12px] border border-line bg-[#F9F9F8] p-3 flex items-center gap-2.5 hover:bg-white hover:border-ink/20 transition-all text-left">
+            <div class="w-11 h-11 rounded-[12px] bg-white border border-line grid place-items-center shrink-0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-semibold text-ink leading-none">Crear usuario local</p>
+              <p class="text-[10px] text-[#6B6B6A] mt-1">Solo en este dispositivo</p>
+            </div>
+            <div class="w-6 h-6 rounded-full bg-white border border-line grid place-items-center text-[12px]">+</div>
+          </button>
+        </div>
+
+        <!-- FORM LOCAL (oculto al inicio) -->
+        <div id="formLocalWrapper" class="hidden mt-4 animate-[fadeIn_.2s_ease]">
+          <div class="h-px bg-line mb-4"></div>
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label class="text-[10px] font-semibold tracking-[0.08em] text-[#6B6B6A]">NOMBRE *</label>
+              <input id="newUserName" type="text" placeholder="Ej. Juan, Trabajo, Personal" class="w-full h-10 px-3 text-[13px] rounded-[10px] border border-line bg-[#F6F6F5] focus:bg-white focus:border-ink outline-none transition-all font-medium">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] font-semibold tracking-[0.08em] text-[#9A9A98]">NOTA <span class="font-normal normal-case text-[10px]">(opcional)</span></label>
+              <input id="newUserNote" type="text" placeholder="Ej. gastos del mes..." class="w-full h-10 px-3 text-[13px] rounded-[10px] border border-transparent bg-[#F6F6F5] focus:bg-white focus:border-line outline-none transition-all">
+            </div>
+            <div id="newUserError" class="hidden rounded-[10px] bg-[#FFF0F0] border border-[#FECACA] px-3 py-2 text-[11px] text-[#B91C1C]"></div>
+            <!-- compatibilidad ids viejos ocultos -->
+            <input id="newUserEmail" type="hidden" value="">
+            <input id="newUserSync" type="checkbox" class="hidden">
+            <div id="syncNewUserWrapper" class="hidden"></div>
+            <div id="syncNewUserHint" class="hidden"></div>
+            <div id="camposNombreNota" class="hidden"></div>
+            <div id="infoSyncActiva" class="hidden"></div>
+
+            <button onclick="crearUsuarioLocal()" class="w-full h-[40px] rounded-full bg-ink text-white text-[13px] font-semibold hover:bg-[#1A1A1A] transition-colors shadow-[0_8px_20px_-8px_rgba(0,0,0,.5)]">Crear usuario local</button>
+            <button onclick="ocultarFormLocal()" class="w-full h-8 text-[12px] text-[#6B6B6A] font-medium hover:text-ink">← Volver</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESTADO: SINCRONIZADO -->
+      <div id="modalStateSync" class="hidden">
+        <div class="rounded-[12px] bg-[#E8F5E9] border border-[#C8E6C9] p-3 flex items-center gap-2.5 mb-4">
+          <div class="w-8 h-8 rounded-full bg-white border border-[#C8E6C9] grid place-items-center text-[#2E7D32] font-bold text-[13px]" id="syncStateInitial">U</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[12px] font-semibold text-[#2E7D32] leading-tight">Conectado</p>
+            <p class="text-[12px] font-medium truncate" id="syncStateEmail">usuario@gmail.com</p>
+            <p class="text-[11px] text-[#4A7C4E] truncate" id="syncStateName">Nombre</p>
+          </div>
+          <span class="w-2.5 h-2.5 rounded-full bg-[#22C55E] shadow-[0_0_0_4px_rgba(34,197,94,.15)]"></span>
+        </div>
+
+        <h3 class="text-[16px] font-bold tracking-tight">Gestión de cuenta</h3>
+        <p class="text-[12px] text-[#6B6B6A] mt-1">Podés cerrar sesión o agregar un usuario local extra.</p>
+
+        <div class="mt-4 space-y-2.5">
+          <button onclick="cerrarSesionDesdeModal()" class="w-full rounded-[12px] border border-[#FECACA] bg-[#FFFBFB] p-3 flex items-center gap-2.5 hover:bg-[#FFF0F0] transition-colors text-left">
+            <div class="w-11 h-11 rounded-[12px] bg-white border border-[#FECACA] grid place-items-center text-[#B91C1C]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[14px] font-semibold text-[#B91C1C]">Cerrar sesión</p>
+              <p class="text-[11px] text-[#9A9A98] mt-0.5">Volver a modo local</p>
+            </div>
+          </button>
+
+          <button id="btnMostrarFormLocalSync" onclick="mostrarFormLocal()" class="w-full rounded-[12px] border border-line bg-[#F9F9F8] p-3 flex items-center gap-3 hover:bg-white hover:border-ink/20 transition-colors text-left">
+            <div class="w-11 h-11 rounded-[12px] bg-white border border-line grid place-items-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-[13px] font-semibold text-ink leading-none">Crear usuario local</p>
+              <p class="text-[11px] text-[#6B6B6A] mt-0.5">Sin sincronizar, solo en este dispositivo</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-white border border-line grid place-items-center">+</div>
+          </button>
+        </div>
+
+        <!-- FORM LOCAL PARA ESTADO SYNC -->
+        <div id="formLocalWrapperSync" class="hidden mt-6">
+          <div class="h-px bg-line mb-4"></div>
+          <div class="space-y-3">
+            <div class="space-y-2">
+              <label class="text-[11px] font-semibold tracking-[0.08em] text-[#6B6B6A]">NOMBRE *</label>
+              <input id="newUserNameSync" type="text" placeholder="Ej. Trabajo, Secundaria" class="w-full h-12 px-4 text-[14px] rounded-[14px] border border-line bg-[#F6F6F5] focus:bg-white focus:border-ink outline-none transition-all font-medium">
+            </div>
+            <div class="space-y-2">
+              <label class="text-[11px] font-semibold tracking-[0.08em] text-[#9A9A98]">NOTA (opcional)</label>
+              <input id="newUserNoteSync" type="text" placeholder="Ej. gastos personales..." class="w-full h-12 px-4 text-[14px] rounded-[14px] border border-transparent bg-[#F6F6F5] focus:bg-white focus:border-line outline-none transition-all">
+            </div>
+            <div id="newUserErrorSync" class="hidden rounded-[10px] bg-[#FFF0F0] border border-[#FECACA] px-3 py-2 text-[11px] text-[#B91C1C]"></div>
+            <button onclick="crearUsuarioLocal()" class="w-full h-[40px] rounded-full bg-ink text-white text-[13px] font-semibold hover:bg-[#1A1A1A] transition-colors">Crear usuario local</button>
+            <button onclick="ocultarFormLocal()" class="w-full h-10 text-[13px] text-[#6B6B6A]">← Volver</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- MODAL ELIMINAR USUARIO CONFIRMACION -->
+<div id="modalEliminarUsuario" class="fixed inset-0 z-[70] hidden">
+  <div class="absolute inset-0 bg-[#0A0A0A]/60 backdrop-blur-sm" onclick="cerrarModalEliminarUsuario()"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-[400px] bg-white rounded-[16px] shadow-[0_24px_64px_-16px_rgba(0,0,0,.4)] overflow-hidden">
+    <!-- HEADER NEGRO -->
+    <div class="bg-[#0A0A0A] px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-[10px] bg-[#FF3B30]/20 grid place-items-center text-[#FF6B6B]">⚠️</div>
+        <div class="leading-tight">
+          <p class="text-white font-bold text-[12px] tracking-wide">Eliminar usuario</p>
+          <p class="text-white/60 text-[10px]">Acción irreversible</p>
+        </div>
+      </div>
+      <button onclick="cerrarModalEliminarUsuario()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white grid place-items-center text-[13px]">✕</button>
+    </div>
+    <div class="p-6 text-center">
+      <div class="w-14 h-14 mx-auto rounded-full bg-[#FFF1F1] border border-[#FECACA] grid place-items-center text-[22px] mb-3">🗑️</div>
+      <h3 class="text-[15px] font-bold">¿Eliminar a <span id="eliminarUserName" class="text-[#0A0A0A]">este usuario</span>?</h3>
+      <p class="text-[12px] text-[#6B6B6A] mt-2 leading-[1.4]">Se borrarán <b>todos sus gastos, sueldo, ahorros y deudas</b>. Esta acción no se puede deshacer.</p>
+      <div class="bg-[#F5F5F3] rounded-[12px] p-3 mt-4 text-left flex items-center gap-3">
+        <div id="eliminarUserInitial" class="w-10 h-10 rounded-full bg-ink text-white grid place-items-center font-bold text-[13px] shrink-0">M</div>
+        <div class="min-w-0">
+          <p id="eliminarUserNameCard" class="text-[13px] font-semibold truncate">Mario</p>
+          <p id="eliminarUserEmailCard" class="text-[11px] text-[#9A9A98] truncate">—</p>
+        </div>
+      </div>
+      <div class="flex gap-2.5 mt-6">
+        <button onclick="cerrarModalEliminarUsuario()" class="flex-1 h-[44px] rounded-full bg-[#F5F5F3] text-[#0A0A0A] text-[13px] font-medium hover:bg-[#EDEDEB] transition-colors">Cancelar</button>
+        <button onclick="confirmarEliminarUsuario()" class="flex-1 h-[44px] rounded-full bg-[#FF3B30] text-white text-[13px] font-semibold hover:bg-[#E0342B] transition-colors">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER USUARIO -->
+<div id="modalVerUsuario" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-[#0A0A0A]/40 backdrop-blur-sm" onclick="cerrarModalVerUsuario()"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[94%] max-w-[560px] card p-0 overflow-hidden shadow-[0_24px_64px_-24px_rgba(0,0,0,.4)]">
+    <div class="p-6 md:p-7">
+      <div class="flex gap-4 items-center mb-6">
+        <div id="viewUserInitial" class="w-12 h-12 rounded-full bg-ink text-white grid place-items-center font-medium">M</div>
+        <div class="overflow-hidden">
+          <p id="viewUserName" class="text-[16px] font-semibold truncate">-</p>
+          <p id="viewUserEmail" class="text-[13px] text-[#9A9A98] truncate">-</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 md:gap-3">
+        <div class="bg-stone rounded-[14px] p-3 min-w-0"><p class="text-[9px] tracking-[0.12em] font-semibold text-[#9A9A98] uppercase">GASTOS</p><p id="viewUserGastosCount" class="mono text-[13px] md:text-[14px] font-medium mt-1.5 leading-none">0</p></div>
+        <div class="bg-stone rounded-[14px] p-3 min-w-0"><p class="text-[9px] tracking-[0.12em] font-semibold text-[#9A9A98] uppercase">TOTAL</p><p id="viewUserTotal" class="mono text-[11px] md:text-[13px] font-medium mt-1.5 leading-tight truncate">$0</p></div>
+        <div class="bg-stone rounded-[14px] p-3 min-w-0"><p class="text-[9px] tracking-[0.12em] font-semibold text-[#9A9A98] uppercase">SUELDO</p><p id="viewUserSueldo" class="mono text-[11px] md:text-[13px] font-medium mt-1.5 leading-tight truncate">$0</p></div>
+      </div>
+      <p id="viewUserNote" class="text-[13px] mt-4 text-[#6B6B6A] bg-stone rounded-xl p-3 hidden"></p>
+    </div>
+    <div class="p-4 border-t border-line flex gap-2">
+      <button onclick="cerrarModalVerUsuario()" class="btn-ghost flex-1 h-11 text-[13px]">Cerrar</button>
+      <button onclick="eliminarUsuarioDesdeVista()" class="flex-1 h-11 rounded-xl bg-[#FF3B30]/10 text-[#FF3B30] text-[13px] font-medium">Eliminar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR USUARIO -->
+<div id="modalCambiarUsuario" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-[#0A0A0A]/40 backdrop-blur-sm" onclick="cerrarModalCambiarUsuario()"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-[400px] card p-6 md:p-7 shadow-[0_24px_64px_-24px_rgba(0,0,0,.4)]">
+    <h3 class="text-[15px] font-semibold mb-5">Cambiar usuario</h3>
+    <div id="lista-cambiar-usuario" class="space-y-2 max-h-[320px] overflow-auto"></div>
+    <button onclick="cerrarModalCambiarUsuario()" class="btn-ghost w-full h-11 text-[13px] mt-4">Cerrar</button>
+  </div>
+</div>
+
+<!-- MODAL PROYECCION -->
+<div id="modalProyeccion" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-[#0A0A0A]/30 backdrop-blur-sm" onclick="cerrarModalProyeccion()"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[100%] max-w-[900px] card p-0 overflow-hidden shadow-[0_24px_64px_-24px_rgba(0,0,0,.4)]">
+    <div class="p-6 md:p-7 flex justify-between items-center border-b border-line">
+      <h3 class="text-[15px] font-semibold flex items-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>Proyección de consumos</h3>
+      <button onclick="cerrarModalProyeccion()" class="w-8 h-8 grid place-items-center rounded-full bg-stone">✕</button>
+    </div>
+    <div class="overflow-x-auto p-4 md:p-6">
+      <table class="w-full min-w-[600px]">
+        <thead>
+          <tr class="text-xs uppercase tracking-widest text-[#9A9A98] border-b border-line">
+            <th class="py-3 px-4 font-medium text-center">MES</th>
+            <th class="py-3 px-4 font-medium whitespace-nowrap text-center">FIJOS</th>
+            <th class="py-3 px-4 font-medium whitespace-nowrap text-center">ÚNICOS</th>
+            <th class="py-3 px-4 font-medium whitespace-nowrap text-center">CUOTAS</th>
+            <th class="py-3 px-4 font-medium whitespace-nowrap text-center">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-proyeccion" class="divide-y divide-line/60 text-sm [&_td]:whitespace-nowrap [&_td]:text-center"></tbody>
+      </table>
+    </div>
+
+<!-- Footer -->
+<footer class="w-full bg-[#FFFFFF] border-t border-[#E8E8E6]">
+  <div class="mx-auto max-w-[1280px] px-6 md:px-8 py-6 flex flex-row items-center justify-between w-full gap-4">
+        <!-- Izquierda: Logo Full HD -->
+    <div class="flex items-center gap-3">
+      <img src="img/logo-full-hd.webp" alt="Logo Icon" class="w-20 h-6 object-contain">
+    </div>
+    <!-- Derecha: Texto y Logo Academia - Link a Academia Digital -->
+    <a href="https://academiadigtal.netlify.app/" target="_blank" rel="noopener" class="flex items-center gap-0 hover:opacity-70 transition-opacity cursor-pointer">
+      <div class="text-right">
+        <p class="text-[9px] font-semibold tracking-[-0.02em] leading-none text-[#0A0A0A]">Academia Digital <span class="text-[8px] font-normal align-super ml-[1px]">&copy;</span></p>
+        <p class="text-[7px] text-[#9A9A98] tracking-wide mt-[2px]">By Mario Maiolo</p>
+      </div>
+      <img src="img/logo-academia.webp" alt="Logo Academia" class="w-8 h-8 object-contain">
+    </a>
+      </div>
+     </footer>
+    </div>
+   </div>
+ </div>
+
+<!-- MODAL COLABORAR -->
+<div id="modalColaborar" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-[#0A0A0A]/40 backdrop-blur-md" onclick="cerrarModalColaborar()"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-[420px] card p-0 overflow-hidden shadow-[0_32px_80px_-16px_rgba(0,0,0,.5)]">
+    <div class="bg-gradient-to-br from-[#FF3B30] to-[#FF6B6B] p-6 md:p-7 text-white relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-8 translate-x-8"></div>
+      <div class="relative flex justify-between items-start">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-white grid place-items-center shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF3B30"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-[16px] font-semibold tracking-tight">¡Gracias por usar LEDGER!</h3>
+            <p class="text-[13px] text-white/80 mt-1">Tu apoyo mantiene el proyecto vivo</p>
+          </div>
+        </div>
+        <button onclick="cerrarModalColaborar()" class="w-8 h-8 grid place-items-center rounded-full bg-white/15 hover:bg-white/25 transition-colors">✕</button>
+      </div>
+    </div>
+   <div class="p-6 md:p-7">
+      <p class="text-[13px] leading-relaxed text-[#5A5A58]">LEDGER <span class="text-[9px] tracking-wide text-[#9A9A98] font-normal align-super">By Academia Digital©</span> es gratuito y sin publicidad. Si te ahorra tiempo y te ayuda a mantener <span class="font-medium text-ink">tus cuentas al día</span>, podés invitarme un cafecito con Mercado Pago. Cada colaboración suma muchísimo.</p>
+      
+      <div class="mt-4 p-3 rounded-xl bg-stone border border-line flex items-center gap-3">
+        <div class="w-18 h-18 rounded- bg-transparent grid place-items-center shrink-0">
+          <img src="img/mercadopago.webp" alt="Mercado Pago" class="w-16 h-16 object-contain">
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-[11px] uppercase tracking-widest text-[#9A9A98] font-semibold">Link MP</p>
+          <p class="text-[11px] font-mono truncate" id="mpLinkText">https://link.mercadopago.com.ar/academiadigital2026</p>
+        </div>
+        <button onclick="navigator.clipboard.writeText(MP_LINK); this.innerText='¡Copiado!'; setTimeout(()=>this.innerText='Copiar',1500)" class="text-[14px] font-medium px-3 py-1.5 rounded-full bg-white border border-line hover:border-ink transition-colors shrink-0">Copiar</button>
+      </div>
+
+      <button onclick="irAMP()" class="w-full mt-5 h-[48px] rounded-[14px] bg-ink text-white font-medium text-[14px] flex items-center justify-center gap-2 hover:bg-[#1A1A1A] transition-colors group">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="group-hover:scale-110 transition-transform"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78 z"/></svg>
+        Quiero Colaborar
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <p class="text-[12px] text-center text-[#9A9A98] mt-3">100% seguro · Podés poner el monto que quieras</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL GRAFICOS DE GASTOS ==================== -->
+<div id="modalGraficos" class="hidden fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm grid place-items-center p-2 sm:p-4 overflow-y-auto">
+  <div class="card w-full max-w-[900px] my-auto max-h-[90vh] flex flex-col overflow-hidden shadow-[0_20px_60px_-12px_rgba(0,0,0,.25)] bg-white">
+    <!-- HEADER FIJO -->
+    <div class="p-4 sm:p-5 border-b border-line flex items-center justify-between bg-white z-10 shrink-0 gap-2">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div class="w-8 h-8 rounded-full bg-ink text-white grid place-items-center shrink-0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        </div>
+        <div class="min-w-0">
+          <h3 class="text-[13px] sm:text-[18px] font-semibold tracking-tight truncate">Gráficos de Gastos</h3>
+          <p class="text-[8px] sm:text-[13px] mono text-[#9A9A98] truncate">Desglose por tipo o categoría</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div class="flex bg-stone rounded-full p-0.5 sm:p-1 border border-line">
+          <button onclick="setChartView('tipo')" id="btnChartTipo" class="px-2.5 sm:px-3 h-[26px] sm:h-[28px] rounded-full bg-ink text-white text-[10px] sm:text-[11px] font-medium">Tipo</button>
+          <button onclick="setChartView('categoria')" id="btnChartCat" class="px-2.5 sm:px-3 h-[26px] sm:h-[28px] rounded-full text-[10px] sm:text-[11px] font-medium text-[#9A9A98]">Categoría</button>
+        </div>
+        <button onclick="cerrarModalGraficos()" class="w-8 h-8 rounded-full bg-stone grid place-items-center hover:bg-line shrink-0">✕</button>
+      </div>
+    </div>
+    <!-- CONTENIDO SCROLLABLE -->
+    <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6">
+      <div class="flex flex-col">
+        <h4 class="text-[11px] uppercase tracking-widest font-semibold text-[#9A9A98] mb-3">Distribución %</h4>
+        <div class="relative w-full h-[220px] sm:h-[260px] bg-stone rounded-[16px] p-3 border border-line flex items-center justify-center">
+          <canvas id="chartDona"></canvas>
+        </div>
+        <div id="legendDona" class="mt-4 space-y-2"></div>
+      </div>
+      <div class="flex flex-col">
+        <h4 class="text-[11px] uppercase tracking-widest font-semibold text-[#9A9A98] mb-3">Montos por <span id="labelBar">tipo</span></h4>
+        <div class="relative w-full h-[220px] sm:h-[260px] bg-stone rounded-[16px] p-3 border border-line flex items-center justify-center">
+          <canvas id="chartBar"></canvas>
+        </div>
+        <div class="mt-4 card bg-stone border-line p-3">
+          <p class="text-[10px] mono uppercase tracking-widest text-[#9A9A98]">Insight</p>
+          <p id="insightTexto" class="text-[12px] leading-snug mt-1">—</p>
+        </div>
+      </div>
+    </div>
+    <!-- Footer actualizado -->
+<footer class="w-full bg-[#FFFFFF] border-t border-[#E8E8E6]">
+  <div class="mx-auto max-w-[1280px] px-6 md:px-8 py-6 flex flex-row items-center justify-between w-full gap-4">
+        <!-- Izquierda: Logo Full HD -->
+    <div class="flex items-center gap-3">
+      <img src="img/logo-full-hd.webp" alt="Logo Icon" class="w-20 h-6 object-contain">
+    </div>
+    <!-- Derecha: Texto y Logo Academia - Link a Academia Digital -->
+    <a href="https://academiadigtal.netlify.app/" target="_blank" rel="noopener" class="flex items-center gap-0 hover:opacity-70 transition-opacity cursor-pointer">
+      <div class="text-right">
+        <p class="text-[9px] font-semibold tracking-[-0.02em] leading-none text-[#0A0A0A]">Academia Digital <span class="text-[8px] font-normal align-super ml-[1px]">&copy;</span></p>
+        <p class="text-[7px] text-[#9A9A98] tracking-wide mt-[2px]">By Mario Maiolo</p>
+      </div>
+      <img src="img/logo-academia.webp" alt="Logo Academia" class="w-8 h-8 object-contain">
+    </a>
+      </div>
+     </footer>
+    </div>
+   </div>
+ </div>
+
+<!-- ==================== MODAL FONDO DE AHORRO / METAS ==================== -->
+<div id="modalAhorro" class="hidden fixed inset-0 z-[70] bg-black/70 backdrop-blur-[8px] grid place-items-center p-3 sm:p-4">
+  <div class="w-full max-w-[400px] max-h-[92vh] overflow-y-auto bg-[#151515] text-white border border-[#252525] rounded-[24px] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.9)]">
+    
+    <!-- Header -->
+    <div class="flex items-start justify-between p-5 pb-4">
+      <div class="flex items-start gap-3 min-w-0">
+        <div class="w-[38px] h-[38px] rounded-[10px] bg-[#1F1F1F] border border-[#2A2A2A] grid place-items-center shrink-0">
+          <img src="img/ahorro.webp" alt="Ahorro" class="w-5 h-5 object-contain" style="filter: brightness(0) invert(1); opacity:0.9;">
+        </div>
+        <div class="min-w-0 pt-0.5">
+          <h3 class="text-[14px] font-bold leading-[1.15] tracking-tight">Fondo de Ahorro / Metas</h3>
+          <p class="text-[10px] leading-[1.3] text-[#6A6A6A] mt-1">Saldo real libre = disponible - ahorro</p>
+        </div>
+      </div>
+      <button onclick="cerrarModalAhorro()" class="w-7 h-7 rounded-full bg-[#1E1E1E] border border-[#2A2A2A] text-[#5A5A5A] hover:text-white grid place-items-center shrink-0">✕</button>
+    </div>
+
+    <div class="px-4 pb-5 space-y-3.5">
+      
+      <div class="space-y-1">
+       <label class="text-[9px] font-bold uppercase tracking-[0.14em] text-[#E5E5E5] ml-1">Nombre de la meta</label>
+        <div class="relative">
+          <div class="absolute left-[9px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#252525] grid place-items-center">
+            <span class="text-[11px] text-white">◎</span>
+          </div>
+          <input id="ahorroNombre" class="w-full bg-[#1E1E1E] border border-[#282828] rounded-[12px] pl-[38px] pr-3 h-[42px] text-[12px] font-medium text-white placeholder:text-[#4A4A4A] focus:outline-none focus:border-[#3A3A3A]" placeholder="Ej: Vacaciones" oninput="actualizarCalculosAhorro()">
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-[9px] font-bold uppercase tracking-[0.14em] text-[#E5E5E5] ml-1">Objetivo Total</label>
+        <div class="relative">
+          <div class="absolute left-[9px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#252525] grid place-items-center text-[12px] text-white font-bold">$</div>
+          <input id="ahorroObjetivo" type="number" class="w-full bg-[#1E1E1E] border border-[#282828] rounded-[12px] pl-[38px] pr-[56px] h-[44px] text-[14px] font-bold text-white placeholder:text-[#4A4A4A] focus:outline-none focus:border-[#3A3A3A]" placeholder="1.500.000" oninput="actualizarCalculosAhorro()">
+          <div class="absolute right-[7px] top-1/2 -translate-y-1/2 h-6 px-2 rounded-full bg-[#252525] border border-[#2E2E2E] grid place-items-center">
+            <span class="text-[10px] font-bold text-white">ARS</span>
+          </div>
+        </div>
+      </div>
+
+     <!-- GRID CORREGIDO - CON SIGNO $ FIJO -->
+<div class="grid grid-cols-2 gap-2">
+  <div class="space-y-1 min-w-0">
+    <label class="text-[9px] font-bold uppercase tracking-[0.14em] text-[#E5E5E5] ml-1">Ahorro Mensual</label>
+    <div class="relative min-w-0">
+      <div class="absolute left-[10px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#252525] grid place-items-center">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.7"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </div>
+      <!-- Signo $ fijo -->
+      <span class="absolute left-[40px] top-1/2 -translate-y-1/2 text-[12px] font-bold text-white pointer-events-none">$</span>
+      <input id="ahorroMensual" type="text" inputmode="numeric" class="w-full bg-[#1E1E1E] border border-[#282828] rounded-[12px] pl-[52px] pr-2 h-[42px] text-[12px] font-bold text-white placeholder:text-[#4A4A4A] focus:outline-none focus:border-[#3A3A3A] min-w-0" placeholder="200.000" oninput="actualizarCalculosAhorro()">
+    </div>
+  </div>
+  
+  <div class="space-y-1 min-w-0">
+    <label class="text-[9px] font-bold uppercase tracking-[0.14em] text-[#E5E5E5] ml-1">Ya Ahorrado</label>
+    <div class="relative min-w-0">
+      <!-- Icono de billetera blanco dentro del contenedor verde -->
+      <div class="absolute left-[10px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-[7px] bg-[#10B981] grid place-items-center">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>
+      </div>
+      <!-- Signo $ fijo -->
+      <span class="absolute left-[40px] top-1/2 -translate-y-1/2 text-[12px] font-bold text-white pointer-events-none">$</span>
+      <input id="ahorroActual" type="text" inputmode="numeric" class="w-full bg-[#1E1E1E] border border-[#10B981]/60 rounded-[12px] pl-[52px] pr-2 h-[42px] text-[12px] font-bold text-white placeholder:text-[#4A4A4A] focus:outline-none focus:border-[#10B981] shadow-[0_0_0_2px_rgba(16,185,129,0.12)] min-w-0" placeholder="300.000" oninput="actualizarCalculosAhorro()">
+    </div>
+  </div>
+</div>
+
+      <div class="bg-[#1A1A1A] border border-[#252525] rounded-[18px] p-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5">
+            <div class="w-5 h-5 rounded-full bg-[#222] border border-[#2A2A2A] grid place-items-center text-[10px]">🏆</div>
+            <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#E5E5E5]">Progreso</span>
+          </div>
+          <div class="flex items-baseline gap-0.5">
+            <span id="ahorroPorcentaje" class="text-[20px] font-bold leading-none text-white">46.7%</span>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="relative w-full h-[5px] bg-[#262626] rounded-full">
+            <div id="ahorroBar" class="absolute left-0 top-0 h-full bg-gradient-to-r from-[#065F46] via-[#10B981] to-[#6EE7B7] rounded-full transition-all duration-500" style="width:46.7%">
+              <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-[10px] h-[10px] rounded-full bg-[#6EE7B7] border-2 border-[#1A1A1A]"></div>
+            </div>
+          </div>
+          <div class="flex justify-between mt-1.5">
+            <span class="text-[7px] text-[#8A8A8A]">0%</span><span class="text-[7px] text-[#8A8A8A]">50%</span><span class="text-[7px] text-[#8A8A8A]">100%</span>
+          </div>
+        </div>
+
+        <!-- 3 CARDS FIX - SIN APRETAR -->
+        <div class="grid grid-cols-3 gap-1.5 mt-3">
+          <div class="bg-[#101010] border border-[#1E1E1E] rounded-[10px] p-2.5 flex flex-col gap-1.5 min-w-0">
+            <p class="text-[8px] font-bold uppercase tracking-wider text-[#8A8A8A] leading-none truncate">Disponible</p>
+            <div class="min-w-0">
+              <p id="ahorroSaldoReal" class="text-[10px] font-bold text-white leading-tight break-all"> $ 500.000</p>
+              <p class="text-[9px] font-semibold text-[#10B981] mt-0.5 flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-[#10B981]"></span>Activo</p>
+            </div>
+          </div>
+          <div class="bg-[#101010] border border-[#1E1E1E] rounded-[10px] p-2.5 flex flex-col gap-1.5 min-w-0">
+            <div class="flex items-center gap-1 min-w-0">
+              <span class="text-[10px]">⚠️</span>
+              <p class="text-[8px] font-bold uppercase tracking-wider text-[#8A8A8A] leading-none truncate">FALTAN</p>
+            </div>
+            <div class="min-w-0">
+              <p id="ahorroFalta" class="text-[10px] font-bold text-white leading-tight break-all"> $ 8.000.000,00</p>
+              <p class="text-[7px] text-[#8A8A8A] mt-0.5">0% restante</p>
+            </div>
+          </div>
+          
+          <div class="bg-[#101010] border border-[#1E1E1E] rounded-[10px] p-2.5 flex flex-col gap-1.5 min-w-0">
+            <div class="flex items-center gap-1 min-w-0">
+              <span class="text-[10px]">🗓️</span>
+              <p class="text-[8px] font-bold uppercase tracking-wider text-[#8A8A8A] leading-none truncate">RESTAN</p>
+            </div>
+            <div class="min-w-0">
+              <p id="ahorroMeses" class="text-[11px] font-bold text-white leading-tight">16 meses</p>
+              <p class="text-[7px] text-[#8A8A8A] mt-0.5 leading-tight">0 meses<br>aprox.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2.5 pt-2">
+        <button onclick="guardarAhorro()" class="flex-1 h-[36px] rounded-[10px] bg-[#10B981] text-black font-bold text-[12px] flex items-center justify-center gap-1.5"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Guardar meta</button>
+        <button onclick="sumarAhorroMensual()" class="flex-1 h-[36px] rounded-[10px] bg-[#1E1E1E] border border-[#2A2A2A] hover:bg-[#252525] text-white font-medium text-[12px] transition-colors">+ Ahorrar</button>
+      </div>
+      <div class="text-center pt-1">
+        <button onclick="eliminarAhorro()" class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#B93A3A] hover:text-red-400 py-2 transition-colors">Eliminar meta</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL DEUDAS ==================== -->
+<div id="modalDeudas" class="hidden fixed inset-0 z-[70] bg-ink/40 backdrop-blur-[6px] overflow-y-auto p-4">
+  <div class="min-h-full flex items-start justify-center pt-6 pb-10">
+    <div class="w-full max-w-[980px] card p-0 overflow-hidden shadow-[0_20px_60px_-12px_rgba(0,0,0,.3)] animate-[scaleIn_.2s_ease]">
+      <!-- Header - Titulo arriba / Boton abajo derecha en celular -->
+      <div class="p-5 md:p-7 border-b border-line flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <h2 class="text-[16px] md:text-[18px] font-semibold tracking-[-0.02em] leading-[1.15]">Supervisión Detallada de Deudas</h2>
+          <p class="text-[12px] md:text-[13px] text-[#9A9A98] mt-1 leading-[1.3]">Tus pasivos y compromisos financieros, al día.</p>
+        </div>
+        <!-- En celular: abajo a la derecha / En desktop: arriba a la derecha -->
+        <div class="flex items-center gap-2 self-end md:self-start w-full md:w-auto justify-end">
+          <button onclick="abrirFormDeuda()" class="whitespace-nowrap inline-flex items-center justify-center h-[32px] px-4 rounded-full bg-ink text-white text-[11px] font-medium leading-none hover:bg-[#1A1A1A]" style="min-width:118px; border-radius:9999px">+ Nueva deuda</button>
+          <button onclick="cerrarModalDeudas()" class="flex-shrink-0 w-9 h-9 rounded-full bg-stone grid place-items-center hover:bg-line">✕</button>
+        </div>
+      </div>
+      <!-- Resumen Total - TARJETAS CREDITO -->
+      <div class="p-6 md:p-7 grid grid-cols-1 md:grid-cols-3 gap-4" style="overflow:visible">
+        <!-- 1 - BLACK -->
+        <div style="border-radius:20px; min-height:200px" class="relative bg-[#0a0a0a] text-white p-5 flex flex-col justify-between overflow-hidden shadow-[0_10px_30px_-10px_rgba(0,0,0,.6)] border border-white/10">
+          <div class="absolute inset-0 opacity-20" style="border-radius:20px; background:radial-gradient(600px at 0% 0%, rgba(255,255,255,.25), transparent)"></div>
+          <div class="relative flex justify-between items-start">
+            <p class="text-[12px] tracking-[0.18em] opacity-60 font-mono uppercase">SALDO GLOBAL ADEUDADO</p>
+            <div class="w-8 h-6 rounded bg-gradient-to-br from-[#E8C765] to-[#8C6A1F] border border-[#D4AF37]/50"></div>
+          </div>
+          <div class="relative mt-4">
+            <p id="deudasTotal" class="text-[24px] font-bold tracking-tight">$0</p>
+            <p id="deudasTotalSub" class="text-[11px] font-mono opacity-60 mt-1"></p>
+          </div>
+          <div class="relative mt-4">
+            <div class="flex justify-between text-[11px] font-mono opacity-40 mb-2"><span>•••• •••• •••• xxxx</span><span id="deudasProgressText">0%</span></div>
+            <div class="h-1.5 w-full bg-white/15 rounded-full overflow-hidden">
+              <div id="deudasProgressGlobal" class="h-full bg-white rounded-full" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+        <!-- 2 - PLATINUM -->
+        <div style="border-radius:20px; min-height:200px" class="relative bg-[#F0F0EB] text-[#1a1a1a] p-5 flex flex-col justify-between overflow-hidden shadow border border-black/10">
+          <p class="text-[12px] tracking-[0.18em] text-[#9A9A98] font-mono uppercase">PRÓXIMO VENCIMIENTO</p>
+          <div>
+            <p id="deudasProxFecha" class="text-[14px] font-medium"></p>
+            <p id="deudasProxMonto" class="text-[20px] font-mono font-bold mt-1">$</p>
+            <p id="deudasProxAcreedor" class="text-[12px] text-[#6B6B69] mt-1"></p>
+          </div>
+          <div class="flex justify-between items-center mt-3"><span class="text-[11px] font-mono opacity-20 tracking-[0.3em]">•••• •••• xxxx</span><div class="flex -space-x-2"><div class="w-6 h-6 rounded-full bg-black/10"></div><div class="w-6 h-6 rounded-full bg-black/20"></div></div></div>
+        </div>
+        <!-- 3 - GOLD -->
+        <div style="border-radius:20px; min-height:200px" class="relative bg-gradient-to-br from-[#FFFBEB] to-[#FBBF24] text-[#78350F] p-5 flex flex-col justify-between overflow-hidden shadow border border-[#FDE68A]">
+          <p class="text-[12px] tracking-[0.18em] font-mono uppercase">CUOTA MENSUAL ESTIMADA</p>
+          <div>
+            <p id="deudasCuotaMes" class="text-[24px] font-bold tracking-tight">$</p>
+            <p class="text-[11px] opacity-70 mt-1">Suma de cuotas de este mes</p>
+          </div>
+          <div class="flex justify-between items-center mt-3"><button onclick="document.getElementById('deudasCalendario').scrollIntoView({behavior:'smooth'})" class="text-[11px] font-medium underline underline-offset-4">Ver calendario →</button><div class="flex -space-x-2"><div class="w-6 h-6 rounded-full bg-[#78350F]/20"></div><div class="w-6 h-6 rounded-full bg-[#78350F]/10"></div></div></div>
+        </div>
+      </div>
+      <!-- FILTRAR arriba en celular / inline en PC -->
+      
+      <div class="px-6 md:px-7 flex flex-col md:flex-row md:items-center gap-3 pb-3">
+        <!-- Label: arriba en celular, a la izquierda en PC -->
+        <span class="flex-shrink-0 text-[10px] font-semibold tracking-[0.14em] uppercase text-[#1a1a1a]">Filtrar</span>
+        <!-- Abajo en celular / al lado en PC -->
+        <div class="flex items-center gap-3 flex-1 min-w-0 w-full">
+          <!-- Pills con scroll -->
+          <div class="filtros-scroll flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
+            <button data-filtro="todas" onclick="setFiltroDeudas('todas')" class="filtroDeuda activo flex-shrink-0 whitespace-nowrap h-6 px-3 rounded-full text-[9px] font-medium bg-[#F6F6F4] text-white">Todas</button>
+            <button data-filtro="banco" onclick="setFiltroDeudas('banco')" class="filtroDeuda flex-shrink-0 whitespace-nowrap h-6 px-3 rounded-full text-[9px] font-medium bg-[#F6F6F4] border border-black/10">Banco / Entidad</button>
+            <button data-filtro="mercado pago" onclick="setFiltroDeudas('mercado pago')" class="filtroDeuda flex-shrink-0 whitespace-nowrap h-6 px-3 rounded-full text-[9px] font-medium bg-[#F6F6F4] border border-black/10">Mercado Pago</button>
+            <button data-filtro="amigo/familia" onclick="setFiltroDeudas('amigo/familia')" class="filtroDeuda flex-shrink-0 whitespace-nowrap h-6 px-3 rounded-full text-[9px] font-medium bg-[#F6F6F4] border border-black/10">Amigo / Familia</button>
+            <button data-filtro="tarjeta" onclick="setFiltroDeudas('tarjeta')" class="filtroDeuda flex-shrink-0 whitespace-nowrap h-6 px-3 rounded-full text-[9px] font-medium bg-[#F6F6F4] border border-black/10">Tarjeta</button>
+          </div>
+          <!-- Vencimiento siempre a la derecha -->
+          <div class="flex-shrink-0 flex items-center pl-0 border-l border-black/5">
+            <select id="deudasOrden" onchange="renderDeudas()" class="h-6 rounded-full bg-white border border-black/10 px-3 text-[9px] font-mono outline-none">
+              <option value="vencimiento">Vencimiento</option>
+              <option value="saldo_desc">Mayor saldo</option>
+              <option value="saldo_asc">Menor saldo</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- Lista Detalle -->
+      <div class="p-6 md:p-7 pt-3">
+        <div id="deudasLista" class="space-y-2"></div>
+        <div id="deudasEmpty" class="hidden py-16 text-center border border-dashed border-line rounded-[16px]">
+          <p class="text-[13px] font-medium">Sin deudas registradas</p>
+          <p class="text-[11px] text-[#9A9A98] mt-1">Registrá tu primer préstamo para empezar a controlarlo.</p>
+          <button onclick="abrirFormDeuda()" class="mt-4 h-9 px-4 rounded-full bg-ink text-white text-[12px]">+ Nueva deuda</button>
+        </div>
+      </div>
+      <!-- Calendario Vencimientos -->
+      <div id="deudasCalendario" class="border-t border-line bg-[#FCFCFB]">
+        <div class="p-6 md:p-7">
+          <h3 class="text-[13px] font-semibold">Próximos vencimientos</h3>
+          <p class="text-[11px] text-[#9A9A98] mt-1">Para evitar recargos. Marcá como pagado al abonar la cuota.</p>
+          <div id="deudasCalendarioLista" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+        </div>
+      </div>
+      <!-- Footer actualizado -->
+<footer class="w-full bg-[#FFFFFF] border-t border-[#E8E8E6]">
+  <div class="mx-auto max-w-[1280px] px-6 md:px-8 py-6 flex flex-row items-center justify-between w-full gap-4">
+        <!-- Izquierda: Logo Full HD -->
+    <div class="flex items-center gap-3">
+      <img src="img/logo-full-hd.webp" alt="Logo Icon" class="w-20 h-6 object-contain">
+    </div>
+    <!-- Derecha: Texto y Logo Academia - Link a Academia Digital -->
+    <a href="https://academiadigtal.netlify.app/" target="_blank" rel="noopener" class="flex items-center gap-0 hover:opacity-70 transition-opacity cursor-pointer">
+      <div class="text-right">
+        <p class="text-[9px] font-semibold tracking-[-0.02em] leading-none text-[#0A0A0A]">Academia Digital <span class="text-[8px] font-normal align-super ml-[1px]">&copy;</span></p>
+        <p class="text-[7px] text-[#9A9A98] tracking-wide mt-[2px]">By Mario Maiolo</p>
+      </div>
+      <img src="img/logo-academia.webp" alt="Logo Academia" class="w-8 h-8 object-contain">
+    </a>
+      </div>
+     </footer>
+    </div>
+   </div>
+ </div>  
+  <!-- MODAL FORMULARIO DEUDAS - FIX DISEÑO COMPACTO -->
+  <div id="formDeudaWrap" class="hidden fixed inset-0 z-[80] bg-ink/40 backdrop-blur-[6px] p-0 md:p-4 grid place-items-end md:place-items-center overflow-hidden">
+    <div class="w-full max-w-[520px] bg-white md:rounded-[20px] rounded-t-[20px] border border-line shadow-[0_24px_64px_-16px_rgba(0,0,0,.4)] max-h-[94vh] md:max-h-[88vh] flex flex-col overflow-hidden">
+      <!-- Header sticky -->
+      <div class="shrink-0 flex items-center justify-between px-5 md:px-6 py-3.5 border-b border-line bg-white">
+        <div>
+          <h3 id="formDeudaTitulo" class="text-[13px] font-semibold tracking-tight">Nueva deuda</h3>
+          <p class="text-[10px] mono text-[#9A9A98] mt-0.5">Completa los datos de la deuda</p>
+        </div>
+        <button onclick="cerrarFormDeuda()" class="w-8 h-8 rounded-full bg-[#F6F6F5] border border-line grid place-items-center hover:bg-white text-[12px]">✕</button>
+      </div>
+      <!-- Body scrollable -->
+      <div class="flex-1 overflow-y-auto px-5 md:px-6 py-4 custom-scroll">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="md:col-span-2">
+            <label class="text-[9px] mono tracking-[0.18em] text-[#9A9A98] uppercase">TIPO DE ACREEDOR</label>
+            <div class="relative mt-1">
+              <span class="absolute left-[5px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-[10px] bg-[#F6F6F5] border border-[#E8E8E6] grid place-items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/><path d="M3 7h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3"/><path d="M15 12h.01"/></svg>
+              </span>
+              <select id="dAcreedorTipo" class="w-full h-10 rounded-[11px] border border-line bg-white pl-[44px] pr-3 text-[13px] outline-none focus:border-ink"><option value="banco">Banco / Entidad financiera</option>
+              <option value="mercado pago">Mercado Pago</option>
+              <option value="tarjeta">Tarjeta de crédito</option>
+              <option value="amigo/familia">Amigo / Familia</option>
+              <option value="otro">Otro</option>
+            </select>
+            </div>
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-[9px] mono tracking-[0.18em] text-[#9A9A98] uppercase">DESCRIPCION <span class="normal-case tracking-normal text-[#C4C4C2]">— ¿A quién le debés?</span></label>
+            <div class="relative mt-1">
+              <span class="absolute left-[5px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-[10px] bg-[#F6F6F5] border border-[#E8E8E6] grid place-items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <input id="dAcreedorNombre" placeholder="Ej: BBVA, Visa, Mamá, Juan (amigo)" class="w-full h-10 rounded-[11px] border border-line bg-white pl-[44px] pr-3 text-[13px] outline-none focus:border-ink placeholder:text-[#B8B8B6]">
+            </div>
+          </div>
+          <div>
+            <label class="text-[9px] mono tracking-[0.18em] text-[#9A9A98] uppercase">MONTO ORIGINAL</label>
+            <div class="relative mt-1">
+              <span class="absolute left-[5px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-[10px] bg-[#F6F6F5] border border-[#E8E8E6] grid place-items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 9.5h20"/><path d="M6 14.5h3.5"/><path d="M12.5 14.5h2.5"/></svg>
+              </span>
+              <input id="dMontoOriginal" type="text" inputmode="decimal" placeholder="$ 500.000" class="w-full h-10 rounded-[11px] border border-line bg-white pl-[44px] pr-3 text-[13px] mono outline-none focus:border-ink placeholder:text-[#B8B8B6]">
+            </div>
+          </div>
+          <div>
+           <label class="text-[9px] mono tracking-[0.18em] text-[#9A9A98] uppercase">RESTANTE <span class="normal-case tracking-normal text-[#C4C4C2]">- falta pagar</span></label>
+            <div class="relative mt-1">
+              <span class="absolute left-[5px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-[10px] bg-[#F6F6F5] border border-[#E8E8E6] grid place-items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3 1.5"/></svg>
+              </span>
+              <input id="dSaldo" type="text" inputmode="decimal" placeholder="$ 300.000" class="w-full h-10 rounded-[11px] border border-line bg-white pl-[44px] pr-3 text-[13px] mono outline-none focus:border-ink placeholder:text-[#B8B8B6]">
+            </div>
+          </div>
+          <div>
+            <label class="text-[9px] mono tracking-[0.18em] text-[#9A9A98] uppercase">CUOTA MENSUAL</label>
+            <div class="relative mt-1">
+              <span class="absolute left-[5px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-[10px] bg-[#F6F6F5] border border-[#E8E8E6] grid place-items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 9.5h20"/><path d="M12 12h.01" stroke-width="2.2" stroke-linecap="round"/></svg>
+              </span>
+              <input id="dCuotaMensual" type="text" inputmode="decimal" placeholder="$ 30.000" class="w-full h-10 rounded-[11px] border border-line bg-white pl-[44px] pr-3 text-[13px] mono outline-none focus:border-ink placeholder:text-[#B8B8B6]">
+            </div>
+          </div>
+          <div>
+            <label class="text-[9px] mono tracking-[0.18em] text-[#9A9A98] uppercase">DÍA VENC. (1-31)</label>
+            <div class="relative mt-1">
+              <span class="absolute left-[5px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-[10px] bg-[#F6F6F5] border border-[#E8E8E6] grid place-items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2.5"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              </span>
+              <input id="dVencDia" type="number" min="1" max="31" placeholder="10" class="w-full h-10 rounded-[11px] border border-line bg-white pl-[44px] pr-3 text-[13px] mono outline-none focus:border-ink">
+            </div>
+          </div>
+          <div>
+            <label class="text-[9px] mono tracking-[0.18em] text-[#9A9A98] uppercase">CUOTAS TOTALES</label>
+            <div class="relative mt-1">
+              <span class="absolute left-[5px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-[10px] bg-[#F6F6F5] border border-[#E8E8E6] grid place-items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14M5 15h14"/><path d="M9 5v14M15 5v14"/></svg>
+              </span>
+              <input id="dCuotasTotal" type="number" min="1" placeholder="12" class="w-full h-10 rounded-[11px] border border-line bg-white pl-[44px] pr-3 text-[13px] mono outline-none focus:border-ink">
+            </div>
+          </div>
+          <div>
+            <label class="text-[9px] mono tracking-[0.18em] text-[#9A9A98] uppercase">CUOTAS PAGADAS</label>
+            <div class="relative mt-1">
+              <span class="absolute left-[5px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-[10px] bg-[#F6F6F5] border border-[#E8E8E6] grid place-items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4.5"/></svg>
+              </span>
+              <input id="dCuotasPagadas" type="number" min="0" placeholder="0" class="w-full h-10 rounded-[11px] border border-line bg-white pl-[44px] pr-3 text-[13px] mono outline-none focus:border-ink">
+            </div>
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-[9px] mono tracking-[0.18em] text-[#9A9A98] uppercase">NOTAS (opcional)</label>
+            <div class="relative mt-1">
+              <span class="absolute left-[5px] top-1/2 -translate-y-1/2 w-8 h-8 rounded-[10px] bg-[#F6F6F5] border border-[#E8E8E6] grid place-items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-opacity="0.85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </span>
+              <input id="dNotas" placeholder="Ej: Prestamo, Compra de Zapatillas..." class="w-full h-10 rounded-[11px] border border-line bg-white pl-[44px] pr-3 text-[13px] outline-none focus:border-ink placeholder:text-[#B8B8B6]">
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Banner compacto -->
+      <div id="calendarDeudaBanner" class="shrink-0 mx-3 mb-2.5 rounded-[12px] bg-[#FFF8E1] border border-[#FFE082] px-3 py-2.5 flex items-start gap-2.5">
+        <div class="w-7 h-7 rounded-full bg-white border border-[#FFE082] grid place-items-center shrink-0 text-[11px]">📅</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-[11px] font-semibold text-ink">¿Agendar vencimiento?</p>
+          <p id="calendarDeudaText" class="text-[10px] leading-[1.35] text-[#7A5C1F] mt-0.5"><span id="calendarDeudaNombre" class="font-semibold text-ink">Esta deuda</span> en Google Calendar</p>
+           <div class="mt-2 rounded-[10px] bg-white/70 border border-[#FFE082]/70 px-2.5 py-2">
+            <p class="text-[10.5px] leading-[1.4] text-[#7A5C1F] flex gap-1.5">
+              <span>💸</span>
+              <span><b class="text-ink">Aviso de descuento:</b> al <b class="text-ink">Guardar</b> se descontará la cuota. Tambien <b class="text-ink">Pagar cuota</b> descontará automáticamente.</span>
+            </p>
+          </div>
+          <div class="flex items-center gap-1.5 mt-2">
+            <button type="button" onclick="agendarDeudaActualEnCalendar()" class="h-7 px-3 rounded-full bg-ink text-white text-[10px] font-medium">Agendar</button>
+            <button type="button" onclick="cerrarBannerDeudaCalendar()" class="h-7 px-2.5 rounded-full bg-white border border-line text-[10px]">Cerrar</button>
+          </div>
+        </div>
+        <button type="button" onclick="cerrarBannerDeudaCalendar()" class="w-5 h-5 grid place-items-center text-[#9A8A6A] hover:text-ink shrink-0">✕</button>
+      </div>
+      <!-- Footer sticky -->
+      <div class="shrink-0 px-5 md:px-6 py-3 border-t border-line bg-[#FCFCFB] flex items-center justify-between gap-3">
+        <button id="btnEliminarDeuda" onclick="eliminarDeudaActual()" class="hidden h-9 px-3.5 rounded-full bg-[#FFE8E8] text-[#B91C1C] text-[11px] font-medium hover:bg-[#FFD5D5]">Eliminar</button>
+        <div class="ml-auto flex gap-2">
+          <button onclick="cerrarFormDeuda()" class="h-9 px-4 rounded-full bg-white border border-line text-[11px] font-medium hover:bg-stone">Cancelar</button>
+          <button onclick="guardarDeuda()" class="h-9 px-5 rounded-full bg-ink text-white text-[11px] font-medium hover:bg-[#1A1A1A]">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- FOOTER FINAL -->
+<footer class="w-full bg-[#F1F5F9] border-t border-[#E2E8F0]">
+  <div class="mx-auto max-w-[1280px] px-4 sm:px-6 md:px-8 py-6 flex flex-row items-center justify-between gap-4">
+    <!-- Izquierda: Logo Icon + Tus cuentas, al día -->
+    <div class="flex items-center gap-3">
+      <img src="img/logo-full-hd.webp" alt="Logo Icon" class="w-36 sm:w-40 h-10 sm:h-12 object-contain">
+      <span class="text-[13px] font-[500] tracking-[-0.01em] text-[#3A3A3A]"></span>
+    </div>
+    <!-- Derecha: Logo Academia + Texto Academia Digital y By Mario Maiolo - Link a Academia Digital -->
+    <a href="https://academiadigtal.netlify.app/" target="_blank" rel="noopener" class="flex items-center gap-3 hover:opacity-70 transition-opacity cursor-pointer">
+      <div class="text-right">
+        <p class="text-[13px] sm:text-[15px] font-semibold tracking-[-0.02em] leading-none text-[#0A0A0A]">Academia Digital <span class="text-[7px] sm:text-[8px] font-normal align-super ml-[1px]">&copy;</span></p>
+        <p class="text-[10px] sm:text-[14px] text-[#9A9A99] tracking-wide mt-[2px]">academiadigtal.netlify.app</p>
+      </div>
+      <img src="img/logo-academia.webp" alt="Logo Academia" class="w-7 h-7 sm:w-8 sm:h-8 object-contain">
+    </a>
+  </div>
+</footer>
+
+<!-- SCRIPT GENERAL -->
+  <script type="module" src="js/firebase.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/finanzas.js"></script>
+</body>
+</html>

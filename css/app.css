@@ -1,0 +1,154 @@
+/* LEDGER - app.css limpio */
+:root{
+  --bg:#F6F6F5;
+  --bg-soft:#F9F9F8;
+  --ink:#0A0A0A;
+  --ink-80:rgba(10,10,10,.8);
+  --line:#E5E5E3;
+  --line-strong:#E8E8E6;
+  --stone:#F0F0EE;
+  --stone-2:#F6F6F5;
+  --muted:#9A9A98;
+  --muted-2:#6B6B6A;
+  --green-bg:#E8F5E9;
+  --green-line:#C8E6C9;
+  --green-text:#2E7D32;
+  --red-bg:#FFF0F0;
+  --red-line:#FECACA;
+  --red-text:#B91C1C;
+}
+
+/* Base */
+*{font-family:'Inter',system-ui,-apple-system,sans-serif}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+html{scroll-behavior:smooth}
+body{background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased}
+
+/* Scroll hide para filtros */
+.filtros-scroll::-webkit-scrollbar{display:none}
+.filtros-scroll{-ms-overflow-style:none; scrollbar-width:none}
+
+/* === COMPONENTES === */
+
+/* Botones */
+.btn-primary{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:48px; padding:0 22px;
+  border-radius:9999px; background:var(--ink); color:#fff;
+  font-size:14px; font-weight:600; letter-spacing:-.01em;
+  box-shadow:0 8px 20px -8px rgba(0,0,0,.5);
+  transition:background .15s;
+}
+.btn-primary:hover{background:#1A1A1A}
+.btn-primary:disabled{opacity:.3; pointer-events:none}
+
+.btn-ghost{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:44px; padding:0 18px;
+  border-radius:9999px; border:1px solid var(--line);
+  background:#fff; font-size:13px; font-weight:500;
+  transition:all .15s;
+}
+.btn-ghost:hover{background:var(--stone); border-color:rgba(10,10,10,.2)}
+
+.btn-danger{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:44px; padding:0 18px;
+  border-radius:14px; border:1px solid var(--red-line);
+  background:#FFFBFB; color:var(--red-text); font-size:14px; font-weight:600;
+}
+.btn-danger:hover{background:var(--red-bg)}
+
+/* Cards */
+.card{
+  background:#fff; border:1px solid var(--line);
+  border-radius:16px; padding:16px;
+}
+.card-hover{transition:border-color .15s, background .15s}
+.card-hover:hover{border-color:rgba(10,10,10,.2); background:#fff}
+
+/* Inputs */
+.input{
+  width:100%; height:48px; padding:0 16px;
+  border-radius:14px; border:1px solid var(--line);
+  background:var(--stone-2); font-size:14px; font-weight:500;
+  outline:none; transition:all .15s;
+}
+.input:focus{background:#fff; border-color:var(--ink)}
+.input--soft{border-color:transparent}
+.input--soft:focus{border-color:var(--line)}
+
+.label{
+  font-size:11px; font-weight:600; letter-spacing:.08em;
+  color:var(--muted-2); text-transform:uppercase;
+}
+
+/* Modal - estructura que arregla tu bug del modal vacio */
+.modal-overlay{
+  position:absolute; inset:0; background:rgba(10,10,10,.6);
+  backdrop-filter:blur(12px);
+}
+.modal-container{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:94%; max-width:480px; max-height:92vh;
+  overflow-y:auto; background:#fff;
+  border-radius:24px; border:1px solid var(--line);
+  box-shadow:0 24px 64px -16px rgba(0,0,0,.5);
+}
+.modal-header{
+  position:sticky; top:0; z-index:10;
+  background:var(--ink); padding:20px 24px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.modal-body{padding:24px}
+.modal-close{
+  width:32px; height:32px; border-radius:9999px;
+  background:rgba(255,255,255,.1); color:#fff;
+  display:grid; place-items:center; font-size:14px;
+  transition:background .15s;
+}
+.modal-close:hover{background:rgba(255,255,255,.2)}
+
+/* Badges */
+.badge{
+  font-size:9px; font-family:'Geist Mono',monospace;
+  padding:2px 6px; border-radius:9999px;
+  border:1px solid var(--line); background:var(--stone);
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.badge--green{background:var(--green-bg); border-color:var(--green-line); color:var(--green-text)}
+.badge--red{background:#FFE8E8; color:var(--red-text); border-color:transparent}
+.badge--blue{background:#E0F2FF; color:#009EE3; border-color:transparent}
+
+/* Icon circles - reemplaza todos los w-11 h-11 rounded-[12px] */
+.icon-box{
+  width:44px; height:44px; border-radius:12px;
+  background:#fff; border:1px solid var(--line);
+  display:grid; place-items:center; flex-shrink:0;
+}
+.icon-box--dark{background:var(--ink); color:#fff; border-color:var(--ink)}
+.icon-box--soft{background:var(--stone-2); border-color:var(--line-strong)}
+
+/* Animaciones */
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)}}
+.animate-fadeIn{animation:fadeIn .2s ease}
+
+/* Utilidades */
+.text-muted{color:var(--muted)}
+.text-muted-2{color:var(--muted-2)}
+.bg-ink{background:var(--ink)}
+.text-ink{color:var(--ink)}
+.border-line{border-color:var(--line)}
+.bg-stone{background:var(--stone)}
+
+/* Fix formulario deuda - scroll custom */
+.custom-scroll::-webkit-scrollbar{width:5px}
+.custom-scroll::-webkit-scrollbar-thumb{background:#E5E5E3;border-radius:10px}
+.custom-scroll::-webkit-scrollbar-thumb:hover{background:#D6D6D4}
+#formDeudaWrap{ overscroll-behavior: contain; }
+#formDeudaWrap input, #formDeudaWrap select{font-size:13px !important}
+@media (max-width: 768px){
+  #formDeudaWrap{padding:0 !important; align-items:end !important;}
+  #formDeudaWrap > div{border-radius:20px 20px 0 0 !important; max-height:94vh !important; width:100% !important; margin:0 !important;}
+}
