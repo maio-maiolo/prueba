@@ -88,72 +88,6 @@ function actualizarDeudaAutomaticaDesdeGasto(gasto){
 }
 
 
-function crearDeudaAutomaticaDesdeGasto(gasto){
-  try{
-    if(!gasto) return;
-    if(gasto.tipo!=='cuotas') return;
-    const cuotas = parseInt(gasto.cuotasTotales)||0;
-    if(cuotas<=1) return;
-    const u = getUsuarioActual(); if(!u) return;
-    const montoCuota = parseFloat(gasto.monto)||0;
-    if(montoCuota<=0) return;
-    const deudasActuales = (getUsuarioActual()?.deudas||[]);
-    if(deudasActuales.some(d=>String(d.gastoId)===String(gasto.id))) return;
-    const montoTotal = montoCuota * cuotas;
-    const saldoRestante = montoCuota * (cuotas - 1);
-    const dia = (()=>{ try{ return new Date(gasto.fecha).getDate()||10 }catch{ return 10 } })();
-    const nuevaDeuda = {
-      id: Date.now()+Math.floor(Math.random()*1000),
-      gastoId: gasto.id,
-      acreedorTipo: 'tarjeta',
-      acreedorNombre: gasto.descripcion || 'Compra en cuotas',
-      montoOriginal: montoTotal,
-      saldo: saldoRestante,
-      cuotaMensual: montoCuota,
-      vencimientoDia: dia,
-      cuotasTotal: cuotas,
-      cuotasPagadas: 1,
-      notas: `Auto-generada desde "${gasto.descripcion}" - ${cuotas} x ${fmt(montoCuota)}`,
-      fechaAlta: new Date().toISOString(),
-      pagos: [],
-      origen: 'auto-cuotas'
-    };
-    updateUsuarioData(u.id, old=>{
-      const deudas=[...(old.deudas||[])];
-      deudas.push(nuevaDeuda);
-      return {...old, deudas};
-    });
-  }catch(e){ console.warn('No se pudo crear deuda automática', e); }
-}
-
-function actualizarDeudaAutomaticaDesdeGasto(gasto){
-  try{
-    if(!gasto) return;
-    const u = getUsuarioActual(); if(!u) return;
-    let necesitaCrear = false;
-    updateUsuarioData(u.id, old=>{
-      let deudas=[...(old.deudas||[])];
-      const idx=deudas.findIndex(d=>String(d.gastoId)===String(gasto.id));
-      if(idx<0){
-        if(gasto.tipo==='cuotas') necesitaCrear = true;
-        return old;
-      }
-      if(gasto.tipo!=='cuotas'){
-        deudas = deudas.filter(d=>String(d.gastoId)!==String(gasto.id));
-      } else {
-        const cuotas = parseInt(gasto.cuotasTotales)||0;
-        const montoCuota = parseFloat(gasto.monto)||0;
-        const montoTotal = montoCuota * cuotas;
-        const pagadas = deudas[idx].cuotasPagadas||1;
-        const saldo = Math.max(0, montoTotal - (montoCuota * pagadas));
-        deudas[idx] = {...deudas[idx], acreedorNombre: gasto.descripcion||deudas[idx].acreedorNombre, montoOriginal: montoTotal, saldo: saldo, cuotaMensual: montoCuota, cuotasTotal: cuotas};
-      }
-      return {...old, deudas};
-    });
-    if(necesitaCrear) crearDeudaAutomaticaDesdeGasto(gasto);
-  }catch(e){ console.warn(e); }
-}
-
 function mostrarConfirmDescuento(monto, contexto){
   const esPagoCuota = (contexto||'').toLowerCase().includes('pago cuota') || (contexto||'').toLowerCase().includes('cuota') || (contexto||'').toLowerCase().includes('amortiz');
   const prefKey = 'ledger_noMostrarConfirmDescuento_cuota';
@@ -457,24 +391,102 @@ function verificarYLimpiezaMensualUnicos(){
   }
 }
 
-function forzarLimpiezaUnicosAhora(){
-  if(!confirm('¿Borrar TODOS los gastos únicos de este usuario? Quedarán solo fijos y cuotas. Esta acción se sincroniza con Firebase.')) return;
-  const u = getUsuarioActual(); if(!u) return;
-  const gastosViejos = u.gastos||[];
-  const paraBorrar = gastosViejos.filter(g=>g.tipo==='unico');
-  if(paraBorrar.length===0){ alert('No hay gastos únicos para borrar'); return; }
-  const ids = paraBorrar.map(g=>String(g.id));
+
+// === SISTEMA TOAST + MODAL PREMIUM LIMPIEZA ===
+function mostrarToast(msg, type='info'){
+  let wrap=document.getElementById('ledgerToastWrap');
+  if(!wrap){
+    wrap=document.createElement('div');
+    wrap.id='ledgerToastWrap';
+    wrap.className='fixed bottom-[24px] left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none w-[92%] max-w-[420px]';
+    document.body.appendChild(wrap);
+  }
+  const icon = type==='success'?'✅':type==='error'?'⛔':'ℹ️';
+  const bg = type==='success'?'bg-ink text-white border-ink':type==='error'?'bg-[#B91C1C] text-white border-[#B91C1C]':'bg-white text-ink border-line';
+  const el=document.createElement('div');
+  el.className=`pointer-events-auto w-full px-4 py-3 rounded-[14px] border shadow-[0_12px_32px_-8px_rgba(0,0,0,.25)] text-[13px] leading-[1.4] flex items-center gap-3 animate-[slideUp_.25s_ease] ${bg}`;
+  el.innerHTML=`<span class="text-[16px]">${icon}</span><span class="flex-1 font-medium">${msg}</span><button onclick="this.parentElement.remove()" class="w-6 h-6 grid place-items-center rounded-full bg-black/10 hover:bg-black/15 shrink-0">✕</button>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.transition='all .25s ease'; el.style.opacity='0'; el.style.transform='translateY(8px)'; setTimeout(()=>el.remove(),250); }, 3800);
+}
+
+function mostrarConfirmLimpiezaUnicos(count){
+  const existente=document.getElementById('modalConfirmLimpieza');
+  if(existente) existente.remove();
+  const html=`
+  <div id="modalConfirmLimpieza" class="fixed inset-0 z-[95] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-[#0A0A0A]/55 backdrop-blur-[6px]" onclick="cerrarConfirmLimpiezaUnicos(false)"></div>
+    <div class="relative w-full max-w-[420px] bg-white rounded-[20px] border border-line shadow-[0_24px_64px_-12px_rgba(0,0,0,.4)] overflow-hidden animate-[scaleIn_.22s_ease]">
+      <div class="bg-ink px-5 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-[12px] bg-white/10 grid place-items-center text-[16px]">🧹</div>
+          <div class="leading-tight">
+            <h3 class="text-[14px] font-semibold text-white tracking-tight">Limpiar gastos del mes</h3>
+            <p class="text-[11px] text-white/60 mt-0.5">Irreversible \u2022 Sincroniza con Firebase</p>
+          </div>
+        </div>
+        <button onclick="cerrarConfirmLimpiezaUnicos(false)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 text-white grid place-items-center">✕</button>
+      </div>
+      <div class="p-5">
+        <div class="w-12 h-12 mx-auto rounded-full bg-[#FFF7ED] border border-[#FFD9A8] grid place-items-center text-[20px] mb-3">⚠️</div>
+        <h4 class="text-center text-[15px] font-semibold text-ink leading-tight">¿Borrar ${count} gasto${count!==1?'s':''} único${count!==1?'s':''}?</h4>
+        <p class="text-center text-[12.5px] leading-[1.5] text-[#6B6B6A] mt-2">Se eliminarán <b class="text-ink">${count} movimientos únicos</b> de este usuario.<br>Se conservan <span class="inline-flex px-1.5 py-0.5 rounded-full bg-[#F6F6F5] border border-line text-[10px] font-medium text-ink">fijos</span> y <span class="inline-flex px-1.5 py-0.5 rounded-full bg-[#F6F6F5] border border-line text-[10px] font-medium text-ink">en cuotas</span>.</p>
+        <div class="mt-4 rounded-[12px] bg-[#FFFBEB] border border-[#FDE68A] px-3 py-2.5 flex gap-2">
+          <span class="text-[12px] shrink-0">🔒</span>
+          <p class="text-[11px] leading-[1.4] text-[#92400E]">Esta acción se sincroniza y <b>no se puede deshacer</b>. Si te arrepentís, tendrás que cargarlos de nuevo.</p>
+        </div>
+        <div class="mt-5 flex gap-2">
+          <button onclick="cerrarConfirmLimpiezaUnicos(false)" class="flex-1 h-11 rounded-full bg-white border border-line text-[13px] font-medium hover:bg-stone">Cancelar</button>
+          <button onclick="cerrarConfirmLimpiezaUnicos(true)" class="flex-1 h-11 rounded-full bg-[#B91C1C] text-white text-[13px] font-medium hover:bg-[#991B1B]">Sí, borrar ${count}</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.addEventListener('keydown', function escLimp(e){ if(e.key==='Escape'){ cerrarConfirmLimpiezaUnicos(false); document.removeEventListener('keydown', escLimp); }});
+  return new Promise(res=>{ window._resolveConfirmLimpieza=res; });
+}
+function cerrarConfirmLimpiezaUnicos(ok){
+  const el=document.getElementById('modalConfirmLimpieza');
+  if(el) el.remove();
+  if(window._resolveConfirmLimpieza){ window._resolveConfirmLimpieza(!!ok); window._resolveConfirmLimpieza=null; }
+}
+function mostrarInfoLimpiezaVacia(){
+  const existente=document.getElementById('modalConfirmLimpieza');
+  if(existente) existente.remove();
+  const html=`
+  <div id="modalConfirmLimpieza" class="fixed inset-0 z-[95] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-[#0A0A0A]/50 backdrop-blur-[6px]" onclick="cerrarConfirmLimpiezaUnicos(false)"></div>
+    <div class="relative w-full max-w-[380px] bg-white rounded-[20px] border border-line shadow-[0_24px_64px_-12px_rgba(0,0,0,.3)] overflow-hidden p-6 text-center">
+      <div class="w-12 h-12 mx-auto rounded-full bg-[#F0FDF4] border border-[#BBF7D0] grid place-items-center text-[20px] mb-3">✨</div>
+      <h4 class="text-[15px] font-semibold text-ink">Todo limpio</h4>
+      <p class="text-[12.5px] text-[#6B6B6A] mt-1.5 leading-[1.45]">No tenés gastos únicos para borrar.<br>Solo quedan fijos y cuotas, que se conservan.</p>
+      <button onclick="cerrarConfirmLimpiezaUnicos(false)" class="mt-5 w-full h-11 rounded-full bg-ink text-white text-[13px] font-medium hover:bg-[#1A1A1A]">Entendido</button>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function forzarLimpiezaUnicosAhora(){
+  const u=getUsuarioActual(); if(!u) return;
+  const gastosViejos=u.gastos||[];
+  const paraBorrar=gastosViejos.filter(g=>g.tipo==='unico');
+  if(paraBorrar.length===0){ mostrarInfoLimpiezaVacia(); return; }
+  const ok=await mostrarConfirmLimpiezaUnicos(paraBorrar.length);
+  if(!ok) return;
+  const ids=paraBorrar.map(g=>String(g.id));
   try{
     const key='ledger_deleted_gastos';
     const prev=JSON.parse(localStorage.getItem(key)||'[]');
     localStorage.setItem(key, JSON.stringify(Array.from(new Set([...prev, ...ids]))));
   }catch(e){}
-  const filtrados = gastosViejos.filter(g=>g.tipo!=='unico');
+  const filtrados=gastosViejos.filter(g=>g.tipo!=='unico');
   updateUsuarioData(u.id, old=>({...old, gastos: filtrados, ultimaLimpiezaUnicos: `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`}));
   cargarDatos();
   if(window._forceUpload) window._forceUpload();
-  alert(`Borrados ${ids.length} gastos únicos`);
+  mostrarToast(`Se borraron ${ids.length} gastos únicos. Quedan fijos y cuotas.`, 'success');
 }
+
 
 
 function cargarDatos(){
@@ -517,7 +529,7 @@ function cargarDatos(){
     tr.innerHTML = `
       <td class="py-3.5 pl-5 md:pl-7 pr-3 mono text-[11px] md:text-[12px] text-[#6B6B6A]">${fechaFmt.toUpperCase()}</td>
       <td class="py-3.5 px-3"><span class="text-[13px] font-[500] tracking-[-0.01em]">${gasto.descripcion}</span></td>
-      <td class="py-3.5 px-3"><div class="cell-cuotas-wrapper"><span class="chip chip-cuotas">${gasto.etiquetaTipo}</span> ${gasto.tipo==='cuotas' && gasto.cuotasRestantes!==null ? `<span class="ml-1 text-[11px] text-[#9A9A98]">${gasto.cuotasRestantes}/${gasto.cuotasTotales}</span>`:``}</div></td>
+      <td class="py-3.5 px-3"><div class="cell-cuotas-wrapper"><span class="chip chip-cuotas">${(() => { let et = gasto.etiquetaTipo||''; if((gasto.descripcion||'').toLowerCase().includes('pago cuota')){ const mm = (gasto.descripcion||'').match(/\((\d+)\/(\d+)\)/); if(mm){ return `Pago cuota ${mm[1]}/${mm[2]}`; } } return et; })()}</span> ${gasto.tipo==='cuotas' && gasto.cuotasTotales!==null ? `<span class="ml-1 text-[11px] ${ (gasto.cuotasRestantes||0)===0 ? 'text-[#2E7D32] font-medium' : 'text-[#9A9A98]' }">${ (gasto.cuotasRestantes||0)===0 ? gasto.cuotasTotales : Math.max(1, (gasto.cuotasTotales - (gasto.cuotasRestantes||0) + 1)) }/${gasto.cuotasTotales}</span>`:``}</div></td>
       <td class="py-3.5 px-3 text-right mono text-[13px] font-medium">${fmt(gasto.monto)}</td>
       <td class="py-3.5 pr-5 md:pr-7 pl-3 text-right">
         <div class="flex justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
@@ -681,12 +693,31 @@ function eliminarGasto(id){
 function abrirProyeccionMes(){
   const u=getUsuarioActual(); if(!u) { alert('Seleccioná un usuario'); return; }
   let gastos = u.gastos||[];
+  let deudas = u.deudas||[];
   let totalFijos = gastos.filter(g=>g.tipo==='fijo').reduce((a,g)=>a+(Number(g.monto)||0),0);
   let cuotasVigentes = gastos.filter(g=>g.tipo==='cuotas' && typeof g.cuotasRestantes==='number' && g.cuotasRestantes>0);
-  let unicos = gastos.filter(g=>g.tipo==='unico');
+  let unicos = gastos.filter(g=>{
+    if(g.tipo!=='unico') return false;
+    const origen = String(g.origen||'');
+    if(origen.startsWith('pago-')) return false; // pago-deuda-cuota, pago-cuota-movimiento
+    if((g.descripcion||'').toLowerCase().includes('pago cuota')) return false;
+    return true;
+  });
   let fechaActual = new Date();
-  let tbody = document.getElementById('tabla-proyeccion');
-  tbody.innerHTML='';
+  let tbodyLegacy = document.getElementById('tabla-proyeccion');
+  let mesesCont = document.getElementById('tabla-proyeccion-meses');
+  let valoresCont = document.getElementById('tabla-proyeccion-valores');
+  if(tbodyLegacy) tbodyLegacy.innerHTML='';
+  if(mesesCont) mesesCont.innerHTML='';
+  if(valoresCont) valoresCont.innerHTML='';
+
+  let deudasProyectables = deudas.filter(d=>{
+    const saldo = Number(d.saldo)||0;
+    const cuota = Number(d.cuotaMensual)||0;
+    if(saldo<=0 || cuota<=0) return false;
+    if(d.origen==='auto-cuotas') return false;
+    return true;
+  });
 
   for(let i=0;i<6;i++){
     let f = new Date(fechaActual.getFullYear(), fechaActual.getMonth()+i,1);
@@ -694,10 +725,26 @@ function abrirProyeccionMes(){
     nombre = nombre.charAt(0).toUpperCase()+nombre.slice(1) + ' ' + f.getFullYear();
     if(i===0) nombre+=' (actual)';
 
-    let sumaCuotas=0;
+    let sumaCuotasGastos=0;
     cuotasVigentes.forEach(c=>{
-      if(c.cuotasRestantes>i) sumaCuotas+= Number(c.monto)||0;
+      if(c.cuotasRestantes>i) sumaCuotasGastos+= Number(c.monto)||0;
     });
+
+    let sumaCuotasDeudas=0;
+    deudasProyectables.forEach(d=>{
+      const cuota = Number(d.cuotaMensual)||0;
+      const total = Number(d.cuotasTotal)||0;
+      const pagadas = Number(d.cuotasPagadas)||0;
+      if(total>0){
+        const restantes = total - pagadas;
+        if(restantes > i) sumaCuotasDeudas += cuota;
+      } else {
+        const saldoRest = (Number(d.saldo)||0) - (cuota * i);
+        if(saldoRest > 0) sumaCuotasDeudas += Math.min(cuota, Number(d.saldo)||0);
+      }
+    });
+
+    let sumaCuotas = sumaCuotasGastos + sumaCuotasDeudas;
 
     let sumaUnicos=0;
     unicos.forEach(g=>{
@@ -708,13 +755,46 @@ function abrirProyeccionMes(){
     });
 
     let total = totalFijos + sumaCuotas + sumaUnicos;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="py-4 px-4 font-medium">${nombre}</td><td class="py-4 px-4 mono">${fmt(totalFijos)}</td><td class="py-4 px-4 mono ${sumaUnicos?'font-semibold bg-amber-50 rounded':''}">${fmt(sumaUnicos)}</td><td class="py-4 px-4 mono">${fmt(sumaCuotas)}</td><td class="py-4 px-4 text-right mono font-semibold">${fmt(total)}</td>`;
-    tbody.appendChild(tr);
+
+    if(tbodyLegacy){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="py-4 px-4 font-medium">${nombre}</td><td class="py-4 px-4 mono">${fmt(totalFijos)}</td><td class="py-4 px-4 mono ${sumaUnicos?'font-semibold bg-amber-50 rounded':''}">${fmt(sumaUnicos)}</td><td class="py-4 px-4 mono">${fmt(sumaCuotas)}</td><td class="py-4 px-4 text-right mono font-semibold">${fmt(total)}</td>`;
+      tbodyLegacy.appendChild(tr);
+    }
+
+    if(mesesCont){
+      const isActual = i===0;
+      const div = document.createElement('div');
+      div.className = `h-[52px] flex items-center px-4 text-[12px] ${isActual?'font-semibold bg-[#FFFBEB]/70':'font-medium'} leading-tight`;
+      div.innerHTML = `<span class="${isActual?'text-ink':'text-[#3A3A3A]'}">${nombre}</span>`;
+      mesesCont.appendChild(div);
+    }
+    if(valoresCont){
+      const isActual = i===0;
+      const row = document.createElement('div');
+      row.className = `flex h-[52px] items-center ${isActual?'bg-[#FFFBEB]/40':''}`;
+      row.innerHTML = `
+        <div class="w-[110px] shrink-0 px-3 text-center mono text-[12px] text-[#5A5A58]">${fmt(totalFijos)}</div>
+        <div class="w-[110px] shrink-0 px-3 text-center mono text-[12px] ${sumaUnicos?'font-bold text-ink bg-amber-50/70 rounded-md py-1 mx-1':''}">${fmt(sumaUnicos)}</div>
+        <div class="w-[110px] shrink-0 px-3 text-center mono text-[12px] text-[#5A5A58]">${fmt(sumaCuotas)}</div>
+        <div class="w-[130px] shrink-0 px-3 text-center mono text-[13px] font-bold text-ink bg-[#FFF8E1]/60 h-full flex items-center justify-center border-l border-[#FFE082]/30">${fmt(total)}</div>
+      `;
+      valoresCont.appendChild(row);
+    }
   }
   document.getElementById('modalProyeccion').classList.remove('hidden');
+  setTimeout(()=>{
+    const hs = document.getElementById('proyHeaderScroll');
+    const bs = document.getElementById('proyBodyScroll');
+    const mesesEl = document.getElementById('tabla-proyeccion-meses');
+    if(hs) hs.scrollLeft=0;
+    if(bs){ bs.scrollLeft=0; bs.scrollTop=0; }
+    if(mesesEl && mesesEl.parentElement) mesesEl.parentElement.scrollTop=0;
+  },10);
 }
+
 function cerrarModalProyeccion(){ document.getElementById('modalProyeccion').classList.add('hidden'); }
+
 function toggleCuotas(){ 
   const tipoVal = document.getElementById('tipo').value;
   document.getElementById('campo-cuotas').classList.toggle('hidden', tipoVal!=='cuotas');
@@ -994,69 +1074,162 @@ function exportarPDF(){
 }
 
 
-// === GRAFICOS Y AHORRO - INTEGRADO LIMPIO ===
-let chartDonaInstance=null, chartBarInstance=null;
+// === GRAFICOS Y AHORRO - INTEGRADO LIMPIO - FINAL v4 ===
+let chartDonaInstance=null, chartBarInstance=null, chartEvolInstance=null;
 let chartView='tipo';
 
 function abrirModalGraficos(){
+  const u=getUsuarioActual(); 
+  if(!u){ alert('Creá un usuario primero'); return; }
   const el=document.getElementById('modalGraficos');
   if(!el){ alert('Modal gráficos no encontrado'); return; }
   el.classList.remove('hidden');
-  setTimeout(()=>{ actualizarGraficos(); }, 80);
+  document.body.style.overflow='hidden';
+  requestAnimationFrame(function(){
+    setTimeout(function(){
+      actualizarGraficos();
+      try{
+        if(chartDonaInstance) chartDonaInstance.resize();
+        if(chartBarInstance) chartBarInstance.resize();
+        if(chartEvolInstance) chartEvolInstance.resize();
+      }catch(e){}
+      const body=el.querySelector('.overflow-y-auto');
+      if(body) body.scrollTop=0;
+    },180);
+  });
 }
-function cerrarModalGraficos(){ document.getElementById('modalGraficos')?.classList.add('hidden'); }
+function cerrarModalGraficos(){ 
+  const el=document.getElementById('modalGraficos');
+  if(el){ el.classList.add('hidden'); }
+  document.body.style.overflow='';
+}
 function setChartView(v){
   chartView=v;
-  const bT=document.getElementById('btnChartTipo'), bC=document.getElementById('btnChartCat');
+  const bT=document.getElementById('btnChartTipo');
+  const bC=document.getElementById('btnChartCat');
   if(bT && bC){
-    if(v==='tipo'){ bT.className='px-3 h-[28px] rounded-full bg-ink text-white text-[11px] font-medium'; bC.className='px-3 h-[28px] rounded-full text-[11px] font-medium text-[#9A9A98]'; }
-    else { bC.className='px-3 h-[28px] rounded-full bg-ink text-white text-[11px] font-medium'; bT.className='px-3 h-[28px] rounded-full text-[11px] font-medium text-[#9A9A98]'; }
+    if(v==='tipo'){
+      bT.className='px-3 h-7 rounded-full bg-ink text-white text-[11px] font-medium';
+      bC.className='px-3 h-7 rounded-full text-[11px] font-medium text-[#9A9A98]';
+    }else{
+      bC.className='px-3 h-7 rounded-full bg-ink text-white text-[11px] font-medium';
+      bT.className='px-3 h-7 rounded-full text-[11px] font-medium text-[#9A9A98]';
+    }
   }
-  const lb=document.getElementById('labelBar'); if(lb) lb.textContent=v;
+  document.querySelectorAll('.btnChartTipoMobile').forEach(function(el){
+    el.className = v==='tipo' ? 'btnChartTipoMobile px-4 h-8 rounded-full bg-ink text-white text-[11px] font-medium' : 'btnChartTipoMobile px-4 h-8 rounded-full text-[11px] text-[#9A9A98] bg-transparent';
+  });
+  document.querySelectorAll('.btnChartCatMobile').forEach(function(el){
+    el.className = v==='categoria' ? 'btnChartCatMobile px-4 h-8 rounded-full bg-ink text-white text-[11px] font-medium' : 'btnChartCatMobile px-4 h-8 rounded-full text-[11px] text-[#9A9A98] bg-transparent';
+  });
+  const lb=document.getElementById('labelBar');
+  if(lb) lb.textContent=v;
   actualizarGraficos();
 }
-
 function actualizarGraficos(){
   const u=getUsuarioActual();
   const legendEl=document.getElementById('legendDona');
   const insEl=document.getElementById('insightTexto');
+  const ctxEvol=document.getElementById('chartEvolucion');
   if(!u || !(u.gastos||[]).length){
     if(legendEl) legendEl.innerHTML='<p class="text-[12px] text-[#9A9A98]">Sin gastos para graficar</p>';
     if(insEl) insEl.textContent='Agregá gastos para ver estadísticas';
+    if(ctxEvol){
+      if(chartEvolInstance){ try{ chartEvolInstance.destroy(); }catch(e){} chartEvolInstance=null; }
+      const p=ctxEvol.parentElement;
+      if(p){ p.innerHTML='<p class="text-[12px] text-[#9A9A98] text-center py-10">Sin datos de evolución</p><canvas id="chartEvolucion" style="display:none"></canvas>'; }
+    }
     return;
   }
-  const gastos=u.gastos;
+  if(typeof Chart==='undefined'){
+    if(legendEl) legendEl.innerHTML='<p class="text-[12px] text-[#FF3B30]">Chart.js no cargó</p>';
+    return;
+  }
+  const filtrados=(u.gastos||[]).filter(function(g){
+    const o=String(g.origen||'');
+    if(o.indexOf('pago-')===0) return false;
+    if((g.descripcion||'').toLowerCase().indexOf('pago cuota')!==-1) return false;
+    if(o==='ahorro-mensual') return false;
+    return true;
+  });
   const agrupado={};
   if(chartView==='tipo'){
-    gastos.forEach(g=>{ const k=(g.tipo||'otros').toLowerCase(); const label=k==='fijo'?'Fijos':k==='unico'?'Únicos':k==='cuota'?'Cuotas':k==='cuotas'?'Cuotas':'Otros'; agrupado[label]=(agrupado[label]||0)+parseFloat(g.monto||0); });
-  } else {
-    gastos.forEach(g=>{ const k=g.categoria||g.etiquetaTipo||'Otros'; agrupado[k]=(agrupado[k]||0)+parseFloat(g.monto||0); });
+    filtrados.forEach(function(g){
+      const k=(g.tipo||'otros').toLowerCase();
+      let label='Otros';
+      if(k==='fijo') label='Fijos';
+      else if(k==='unico') label='Únicos';
+      else if(k==='cuota' || k==='cuotas') label='Cuotas';
+      agrupado[label]=(agrupado[label]||0)+parseFloat(g.monto||0);
+    });
+  }else{
+    filtrados.forEach(function(g){
+      const k=g.categoria||g.etiquetaTipo||'Otros';
+      agrupado[k]=(agrupado[k]||0)+parseFloat(g.monto||0);
+    });
   }
   const labels=Object.keys(agrupado);
   const values=Object.values(agrupado);
-  const total=values.reduce((a,b)=>a+b,0);
-  const fmtLocal=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(n||0);
-  const palette=labels.map((_,i)=>['#0A0A0A','#FF3B30','#007AFF','#34C759','#FF9500','#AF52DE','#FF2D55','#5AC8FA','#FFCC02','#30D158','#5856D6','#FF6B00'][i%12]);
+  const total=values.reduce(function(a,b){return a+b;},0) || 1;
+  function fmtLocal(n){ return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(n||0); }
+  const palette=labels.map(function(_,i){ return ['#0A0A0A','#FF3B30','#007AFF','#34C759','#FF9500','#AF52DE','#FF2D55','#5AC8FA','#FFCC02','#30D158','#5856D6','#FF6B00'][i%12]; });
   const ctxD=document.getElementById('chartDona');
   if(ctxD){
-    if(typeof Chart==='undefined'){ console.error('Chart.js no cargado'); return; }
-    if(chartDonaInstance) chartDonaInstance.destroy();
-    chartDonaInstance=new Chart(ctxD, { type:'doughnut', data:{ labels, datasets:[{ data:values, backgroundColor:palette, borderWidth:3, borderColor:'#FFFFFF', hoverOffset:8, hoverBorderWidth:3 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'64%', plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> ' '+c.label+': '+fmtLocal(c.parsed)+' ('+((c.parsed/total)*100).toFixed(1)+'%)' } } } } });
+    if(chartDonaInstance){ try{ chartDonaInstance.destroy(); }catch(e){} }
+    chartDonaInstance=new Chart(ctxD, {
+      type:'doughnut',
+      data:{ labels:labels, datasets:[{ data:values, backgroundColor:palette, borderWidth:3, borderColor:'#FFFFFF', hoverOffset:8 }] },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'64%', plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:function(c){ return ' '+c.label+': '+fmtLocal(c.parsed)+' ('+((c.parsed/total)*100).toFixed(1)+'%)'; } } } } }
+    });
   }
-  if(legendEl) legendEl.innerHTML=labels.map((l,i)=>'<div class="flex justify-between items-center text-[12px] py-1 border-b border-line/60 last:border-0"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:'+palette[i]+'"></span><span class="font-medium">'+l+'</span></div><div class="mono flex items-center gap-2"><span class="font-medium">'+fmtLocal(values[i])+'</span><span class="text-[11px] text-[#9A9A98]">'+((values[i]/total)*100).toFixed(1)+'%</span></div></div>').join('');
+  if(legendEl){
+    let html='';
+    for(let i=0;i<labels.length;i++){
+      html+='<div class="flex justify-between items-center text-[12px] py-2 border-b border-line/60 last:border-0"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:'+palette[i]+'"></span><span class="font-medium">'+labels[i]+'</span></div><div class="mono flex items-center gap-2"><span class="font-medium">'+fmtLocal(values[i])+'</span><span class="text-[11px] text-[#9A9A98]">'+((values[i]/total)*100).toFixed(1)+'%</span></div></div>';
+    }
+    legendEl.innerHTML=html;
+  }
   const ctxB=document.getElementById('chartBar');
   if(ctxB){
-    if(chartBarInstance) chartBarInstance.destroy();
-    chartBarInstance=new Chart(ctxB, { type:'bar', data:{ labels, datasets:[{ label:'Monto', data:values, backgroundColor:palette, borderColor:'#0A0A0A', borderWidth:1, borderRadius:8, barThickness:26, borderSkipped:false }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> ' '+fmtLocal(c.parsed.y) } } }, scales:{ y:{ beginAtZero:true, grid:{ color:'#E8E8E6' }, ticks:{ callback:function(v){ return '$'+v; }, font:{family:'Geist Mono', size:10} } }, x:{ grid:{ display:false }, ticks:{ font:{size:11} } } } } });
+    if(chartBarInstance){ try{ chartBarInstance.destroy(); }catch(e){} }
+    chartBarInstance=new Chart(ctxB, {
+      type:'bar',
+      data:{ labels:labels, datasets:[{ label:'Monto', data:values, backgroundColor:palette, borderWidth:1, borderRadius:8, barThickness:28 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ beginAtZero:true, grid:{ color:'#E8E8E6' } }, x:{ grid:{ display:false } } } }
+    });
   }
-  const maxIdx=values.indexOf(Math.max(...values));
+  if(ctxEvol){
+    if(chartEvolInstance){ try{ chartEvolInstance.destroy(); }catch(e){} }
+    const meses=[];
+    const ahora=new Date();
+    for(let i=5;i>=0;i--){
+      const d=new Date(ahora.getFullYear(), ahora.getMonth()-i, 1);
+      meses.push({ label: d.toLocaleString('es-AR',{month:'short'}).replace('.',''), year:d.getFullYear(), month:d.getMonth() });
+    }
+    const valoresMes=meses.map(function(m){
+      return (u.gastos||[]).filter(function(g){
+        const o=String(g.origen||'');
+        if(o.indexOf('pago-')===0) return false;
+        if(o==='ahorro-mensual') return false;
+        try{ const fg=new Date(g.fecha+'T00:00:00'); return fg.getFullYear()===m.year && fg.getMonth()===m.month; }catch(e){ return false; }
+      }).reduce(function(a,g){ return a+ (Number(g.monto)||0); },0);
+    });
+    chartEvolInstance=new Chart(ctxEvol, {
+      type:'line',
+      data:{ labels: meses.map(function(m){ return m.label.charAt(0).toUpperCase()+m.label.slice(1); }), datasets:[{ label:'Gastos', data:valoresMes, borderColor:'#0A0A0A', backgroundColor:'rgba(10,10,10,0.08)', borderWidth:2.5, tension:0.4, fill:true, pointRadius:4 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ beginAtZero:true }, x:{ grid:{ display:false } } } }
+    });
+  }
+  const maxIdx=values.indexOf(Math.max.apply(null, values));
   if(insEl && labels[maxIdx]){
     const pct=((values[maxIdx]/total)*100).toFixed(1);
     insEl.innerHTML='Mayor gasto en <b>'+labels[maxIdx]+'</b> con '+fmtLocal(values[maxIdx])+' ('+pct+'% del total).';
   }
 }
 
+
 function abrirModalAhorro(){
+
   const u=getUsuarioActual(); if(!u){ alert('Creá un usuario primero'); return; }
   if(!u.ahorro){ u.ahorro={ nombre:'', objetivo:0, mensual:0, actual:0 }; }
   const el=document.getElementById('modalAhorro'); if(!el){ alert('Modal ahorro no encontrado'); return; }
@@ -1186,25 +1359,39 @@ document.addEventListener('click',e=>{
 function refrescarTodo(){ cargarDatos(); renderListaUsuariosModal(); renderListaCambiarUsuario(); }
 
 document.addEventListener('DOMContentLoaded', ()=>{
-  migrarDatosAntiguos();
-  const users = getUsuarios();
-  const currentId = getCurrentId();
-  const activeUser = users.find(u => String(u.id) === String(currentId));
-
+  try{ migrarDatosAntiguos(); }catch(e){}
+  let users = [];
+  try{ users = getUsuarios(); }catch(e){ users=[]; }
+  let currentId = null;
+  try{ currentId = getCurrentId(); }catch(e){}
+  let activeUser = null;
+  try{ activeUser = users.find(u => String(u.id) === String(currentId)); }catch(e){}
   if (users.length === 0 || !activeUser) {
     if (users.length > 0) {
-      setCurrentId(users[0].id);
+      try{ setCurrentId(users[0].id); }catch(e){ try{ localStorage.setItem('ledger_current_v2', String(users[0].id)); }catch(e2){} }
     } else {
-      localStorage.removeItem(STORAGE_CURRENT);
-      document.getElementById('modalBienvenida').classList.remove('hidden');
+      try{ localStorage.removeItem(STORAGE_CURRENT); }catch(e){}
+      try{ document.getElementById('modalBienvenida')?.classList.remove('hidden'); }catch(e){}
     }
   }
-
-  document.getElementById('fecha').valueAsDate=new Date(); 
-  activarFormatoMiles();
-  refrescarTodo();
-  cargarCotizaciones(); 
-  setInterval(cargarCotizaciones,300000);
+  try{ const f=document.getElementById('fecha'); if(f) f.valueAsDate=new Date(); }catch(e){}
+  try{ activarFormatoMiles(); }catch(e){}
+  try{ refrescarTodo(); }catch(e){ console.error('refrescarTodo error', e); }
+  try{ cargarCotizaciones(); }catch(e){}
+  try{ setInterval(cargarCotizaciones,300000); }catch(e){}
+  // Si sigue sin usuario despues de 500ms, forzar seleccion
+  setTimeout(()=>{
+    try{
+      const u=getUsuarioActual();
+      if(!u){
+        const us=getUsuarios();
+        if(us.length>0){
+          setCurrentId(us[0].id);
+          refrescarTodo();
+        }
+      }
+    }catch(e){}
+  }, 500);
 });
 
 /* ================== DEUDAS MODULE - LEDGER ================== */
@@ -1313,23 +1500,32 @@ function guardarDeuda(){
       const fechaHoy = new Date().toISOString().split('T')[0];
       const esEnCuotas = (data.cuotasTotal||0) > 1;
       
-      // LOGICA CORREGIDA: debitar desde cuota mensual, no monto original
+      // FIX: respetar cuotas pagas ingresadas - no sumar +1 y no hardcodear 1/Total
       const cuotaADebitar = data.cuotaMensual || 0;
       const montoOriginal = data.montoOriginal || data.saldo || 0;
-      const montoGastoInicial = cuotaADebitar > 0 ? cuotaADebitar : montoOriginal;
-      // Si hay cuota, la primera se descuenta al guardar (de cuota mensual, no monto original)
-      let saldoInicial = data.saldo;
-      let cuotasPagadasInicial = data.cuotasPagadas || 0;
-      let pagosIniciales = [];
-      if(cuotaADebitar > 0){
-        saldoInicial = Math.max(0, montoOriginal - cuotaADebitar);
-        cuotasPagadasInicial = (data.cuotasPagadas||0) + 1;
-        pagosIniciales = [{ fecha: new Date().toISOString(), monto: cuotaADebitar }];
-        // Actualizar data para reflejar primer pago
-        data.saldo = saldoInicial;
-        data.cuotasPagadas = cuotasPagadasInicial;
+      const cuotasPagadasUsuario = parseInt(data.cuotasPagadas) || 0;
+      const cuotasTotalUsuario = parseInt(data.cuotasTotal) || 0;
+
+      // Saldo = total - (pagas * cuota)
+      let saldoInicial = montoOriginal;
+      if(cuotasTotalUsuario > 0 && cuotaADebitar > 0){
+        saldoInicial = Math.max(0, montoOriginal - (cuotaADebitar * cuotasPagadasUsuario));
+      } else if(data.saldo > 0){
+        saldoInicial = data.saldo;
       }
-      
+      let cuotasPagadasInicial = cuotasPagadasUsuario;
+      let pagosIniciales = [];
+      if(cuotasPagadasUsuario > 0 && cuotaADebitar > 0){
+        pagosIniciales = Array.from({length: cuotasPagadasUsuario}, (_,i)=>({
+          fecha: new Date().toISOString(),
+          monto: cuotaADebitar,
+          cuotaNro: i+1
+        }));
+      }
+
+      data.saldo = saldoInicial;
+      data.cuotasPagadas = cuotasPagadasInicial;
+
       const nuevaDeuda = { 
         id: deudaIdGenerada, 
         fechaAlta: new Date().toISOString(), 
@@ -1342,14 +1538,27 @@ function guardarDeuda(){
       };
       deudas.push(nuevaDeuda);
 
-      const descripcionMov = `Pago cuota: ${data.acreedorNombre} (1/${data.cuotasTotal||'?'})` + (data.notas ? ` - ${data.notas}` : '');
+      // Si cargaste 4/5, el movimiento debe decir 4/5, no 1/5
+      let nroCuotaParaGasto = cuotasPagadasInicial > 0 ? cuotasPagadasInicial : 1;
+      // Caso especial: deuda nueva con 0 pagas -> registrar primera cuota como paga ahora
+      if(cuotasTotalUsuario > 0 && cuotasPagadasUsuario === 0 && cuotaADebitar > 0){
+        nroCuotaParaGasto = 1;
+        nuevaDeuda.cuotasPagadas = 1;
+        nuevaDeuda.saldo = Math.max(0, montoOriginal - cuotaADebitar);
+        nuevaDeuda.pagos = [{ fecha: new Date().toISOString(), monto: cuotaADebitar, cuotaNro: 1 }];
+        data.cuotasPagadas = 1;
+        data.saldo = nuevaDeuda.saldo;
+      }
+
+      const montoGastoInicial = cuotaADebitar > 0 ? cuotaADebitar : montoOriginal;
+      const descripcionMov = `Pago cuota: ${data.acreedorNombre} (${nroCuotaParaGasto}/${data.cuotasTotal||'?'})` + (data.notas ? ` - ${data.notas}` : '');
       const nuevoGasto = {
         id: gastoIdGenerado,
         descripcion: descripcionMov.slice(0,120),
         monto: montoGastoInicial,
         fecha: fechaHoy,
         tipo: 'unico',
-        etiquetaTipo: `Pago cuota 1/${data.cuotasTotal||''}`.trim() || 'Pago cuota',
+        etiquetaTipo: `Pago cuota ${nroCuotaParaGasto}/${data.cuotasTotal||''}`.trim() || 'Pago cuota',
         origen: 'deuda-manual',
         deudaId: deudaIdGenerada,
         origenDeudaId: deudaIdGenerada
@@ -1395,8 +1604,31 @@ function eliminarDeudaActual(){
   if(!deudaEditId) return;
   if(!confirm('¿Eliminar esta deuda?')) return;
   const u=getUsuarioActual(); if(!u) return;
+  try{
+    const key='ledger_deleted_deudas';
+    let lista=JSON.parse(localStorage.getItem(key)||'[]').map(String);
+    const sId=String(deudaEditId);
+    if(!lista.includes(sId)){ lista.push(sId); localStorage.setItem(key, JSON.stringify(lista)); }
+  }catch(e){}
   updateUsuarioData(u.id, old=>({ ...old, deudas:(old.deudas||[]).filter(x=>String(x.id)!==String(deudaEditId)) }));
   cerrarFormDeuda(); renderDeudas(); actualizarResumen?.();
+  if(window.scheduleUpload) window.scheduleUpload();
+}
+
+function eliminarDeuda(id){ 
+  if(!id) return; 
+  if(!confirm('¿Eliminar esta deuda? Esta acción no se puede deshacer.')) return; 
+  const u=getUsuarioActual(); if(!u) return; 
+  try{
+    const key='ledger_deleted_deudas';
+    let lista=JSON.parse(localStorage.getItem(key)||'[]').map(String);
+    const sId=String(id);
+    if(!lista.includes(sId)){ lista.push(sId); localStorage.setItem(key, JSON.stringify(lista)); }
+  }catch(e){}
+  updateUsuarioData(u.id, old=>({ ...old, deudas:(old.deudas||[]).filter(x=>String(x.id)!==String(id)) })); 
+  renderDeudas(); 
+  try{ actualizarResumen?.(); }catch(e){}
+  if(window.scheduleUpload) window.scheduleUpload();
 }
 
 async function pagarCuotaDeuda(id){
@@ -1787,7 +2019,8 @@ function renderDeudas(){
           </button>
           <button onclick="pagarCuotaDeuda('${d.id}')" ${((d.saldo||0)<=0)?'disabled':''} class="h-8 px-3 rounded-full bg-ink text-white text-[11px] font-medium disabled:opacity-30 hover:bg-[#1A1A1A]">Pagar cuota</button>
           <button onclick="amortizarDeuda('${d.id}')" class="h-8 px-3 rounded-full bg-stone border border-line text-[11px] hover:bg-line">Amortizar</button>
-          <button onclick="abrirFormDeuda('${d.id}')" class="w-8 h-8 rounded-full bg-white border border-line grid place-items-center hover:bg-stone">✎</button>
+          <button onclick="abrirFormDeuda('${d.id}')" class="w-8 h-8 rounded-full bg-white border border-line grid place-items-center hover:bg-stone" title="Editar">✎</button>
+          <button onclick="eliminarDeuda('${d.id}')" class="w-8 h-8 rounded-full bg-[#FFF0F0] border border-[#FECACA] grid place-items-center hover:bg-[#FFE8E8] text-[#B91C1C] text-[12px]" title="Eliminar deuda">🗑</button>
         </div>
       </div>`;
     }).join('');

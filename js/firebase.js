@@ -269,9 +269,19 @@ async function mergeUsuariosPorId(localArr, remoteArr, delIdsOverride, delGastos
       });
       principal.deudas = Array.from(dMap.values()).filter(d=> !delDeudasIds.includes(String(d.id)) && (!d.gastoId || !delGastosIds.includes(String(d.gastoId))));
 
-      const sP = principal.sueldo||0;
-      const sN = u.sueldo||0;
-      if(sN>0) principal.sueldo = Math.max(sP, sN);
+      // FIX SUELDO: respetar el valor más reciente (por updatedAtLocal) para permitir bajar el ingreso
+      if (typeof u.sueldo === 'number') {
+        const tP = principal.updatedAtLocal || principal.updatedAt || 0;
+        const tN = u.updatedAtLocal || u.updatedAt || 0;
+        // si el entrante es más nuevo, o si el principal no tiene sueldo, usar el entrante
+        if (tN >= tP || principal.sueldo == null) {
+          principal.sueldo = u.sueldo;
+        }
+        // actualizar timestamp del principal al más reciente
+        if (tN || tP) {
+          principal.updatedAtLocal = Math.max(tP, tN);
+        }
+      }
 
       // Sueldo, ahorro, etc: merge simple
       if(u.ahorro) principal.ahorro = {...(principal.ahorro||{}), ...u.ahorro};
