@@ -45,7 +45,7 @@ function updateCloudUI(user){
     logoutBtnM: document.getElementById('cloudLogoutBtnMobile')
   };
   if(user){
-    if(els.email) els.email.textContent = user.email + " â€¢ sincronizado";
+    if(els.email) els.email.textContent = user.email + " • sincronizado";
     if(els.emailM) els.emailM.textContent = user.email;
     if(els.name) els.name.textContent = user.displayName || user.email.split('@')[0];
     if(els.nameM) els.nameM.textContent = user.displayName || user.email.split('@')[0];
@@ -56,7 +56,7 @@ function updateCloudUI(user){
     if(els.logoutBtn){ els.logoutBtn.classList.remove('hidden'); els.logoutBtn.classList.add('grid'); }
     if(els.logoutBtnM){ els.logoutBtnM.classList.remove('hidden'); els.logoutBtnM.classList.add('grid'); }
   } else {
-    if(els.email) els.email.textContent = "Modo local â€” sin nube";
+    if(els.email) els.email.textContent = "Modo local — sin nube";
     if(els.emailM) els.emailM.textContent = "Modo local";
     if(els.cloudBtn){ els.cloudBtn.innerHTML = ICON_CLOUD; els.cloudBtn.className = "hidden md:grid w-9 h-9 rounded-[10px] bg-[#F6F6F5] border border-line place-items-center hover:bg-white transition-colors text-ink/80"; els.cloudBtn.onclick = ()=>loginGoogle(); }
     if(els.cloudBtnM){ els.cloudBtnM.innerHTML = ICON_CLOUD; els.cloudBtnM.className = "shrink-0 w-8 h-8 rounded-full bg-[#0A0A0A] text-white grid place-items-center"; els.cloudBtnM.onclick = ()=>{ toggleMobileMenu(); loginGoogle(); }; }
@@ -69,7 +69,7 @@ let _resolverSyncNube = null;
 function mostrarModalSyncNube(cantidad){
   const modal = document.getElementById('modalSyncNube');
   const textEl = document.getElementById('modalSyncNubeText');
-  if(textEl) textEl.innerHTML = `TenÃ©s <b class="text-ink">${cantidad} ${cantidad===1?'usuario':'usuarios'}</b> en la nube.`;
+  if(textEl) textEl.innerHTML = `Tenés <b class="text-ink">${cantidad} ${cantidad===1?'usuario':'usuarios'}</b> en la nube.`;
   if(modal){ modal.classList.remove('hidden'); modal.classList.add('flex'); }
   return new Promise(resolve=>{ _resolverSyncNube = resolve; });
 }
@@ -133,7 +133,7 @@ async function logoutCloudForzado(){
       lastRemoteHash = "";
       cloudUser = null;
 
-      console.log("ðŸ”’ Logout: datos cloud eliminados del dispositivo, quedan", soloLocales.length, "usuarios locales");
+      console.log("🔒 Logout: datos cloud eliminados del dispositivo, quedan", soloLocales.length, "usuarios locales");
     }catch(e){ console.warn("Error limpiando localStorage en logout", e); }
     
     await signOut(auth);
@@ -212,8 +212,8 @@ async function mergeUsuariosPorId(localArr, remoteArr, delIdsOverride, delGastos
         } else {
           const prev = gastosMap.get(gid);
           // Merge: conservar campos nuevos de finanzas.js
-          // cuotasRestantes: quedarnos con el menor (mÃ¡s pagado)
-          // saldo/descripcion/monto: quedarnos con el mÃ¡s reciente segÃºn lÃ³gica
+          // cuotasRestantes: quedarnos con el menor (más pagado)
+          // saldo/descripcion/monto: quedarnos con el más reciente según lógica
           const merged = {...prev, ...g};
           // Si ambos tienen cuotasRestantes, elegir el menor
           if(typeof prev.cuotasRestantes==='number' && typeof g.cuotasRestantes==='number'){
@@ -256,7 +256,7 @@ async function mergeUsuariosPorId(localArr, remoteArr, delIdsOverride, delGastos
             ...prev,
             ...d,
             pagos: pagosMerged,
-            // saldo: menor (mÃ¡s pagado), cuotasPagadas: mayor
+            // saldo: menor (más pagado), cuotasPagadas: mayor
             saldo: Math.min(Number(prev.saldo||0), Number(d.saldo||0)),
             cuotasPagadas: Math.max(Number(prev.cuotasPagadas||0), Number(d.cuotasPagadas||0))
           };
@@ -309,7 +309,7 @@ async function mergeUsuariosPorId(localArr, remoteArr, delIdsOverride, delGastos
   if(resultado.length===0 && byId.size>0){
     resultado = [Array.from(byId.values())[0]];
   }
-  console.log("ðŸ”„ MERGE RESULTADO:", resultado.map(u=>({name:u.name, sueldo:u.sueldo, gastos:u.gastos?.length, deudas:u.deudas?.length})));
+  console.log("🔄 MERGE RESULTADO:", resultado.map(u=>({name:u.name, sueldo:u.sueldo, gastos:u.gastos?.length, deudas:u.deudas?.length})));
   return resultado;
 }
 
@@ -417,7 +417,7 @@ async function uploadToCloud(){
     await setDoc(ref, payload, { merge: true });
     lastRemoteHash = JSON.stringify({u: payload.usuarios, dU: finalDeletedUsuarios, dG: finalDeletedGastos, dD: finalDeletedDeudas});
     localStorage.setItem('ledger_last_sync', Date.now().toString());
-    console.log("â˜ï¸ Subido OK", finalUsuarios.length, "usuarios");
+    console.log("☁️ Subido OK", finalUsuarios.length, "usuarios");
   }catch(e){ console.error("Error upload:", e); }
 }
 
@@ -497,7 +497,7 @@ onAuthStateChanged(auth, async (user)=>{
     const localCloudUsers=localUsers.filter(u=>u.syncMode!=='local');
 
     if(localUsers.length===0 || localCloudUsers.length===0){
-      console.log("â˜ï¸ Primera sync: cargando nube");
+      console.log("☁️ Primera sync: cargando nube");
       isSyncingFromCloud=true;
       const asegurados=asegurarOwnerFields(remoteUsuarios, user);
       localStorage.setItem('ledger_users_v2', JSON.stringify(asegurados));
@@ -555,7 +555,7 @@ onAuthStateChanged(auth, async (user)=>{
     const newHash=JSON.stringify({u: remoteUsuariosRaw, dU: remoteDelUsuariosRaw, dG: remoteDelGastosRaw, dD: remoteDelDeudasRaw});
     if(newHash===lastRemoteHash) return;
 
-    console.log("â˜ï¸ Cambio remoto detectado");
+    console.log("☁️ Cambio remoto detectado");
     const localUsers=getUsuariosSafe();
     const localOnly=localUsers.filter(u=>u.syncMode==='local');
     const localDelU = getDeletedUsuariosIds();
