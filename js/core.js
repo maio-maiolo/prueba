@@ -3,7 +3,7 @@
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
+      .then(reg => console.log('Service Worker registrado con Ã©xito:', reg.scope))
       .catch(err => console.log('Error al registrar Service Worker:', err));
   });
 }
@@ -93,7 +93,7 @@ function yaVioTourIconos(userId){
 function marcarTourIconosVisto(userId){
   try{
     localStorage.setItem(getTourKeyPorUsuario(userId), 'visto');
-    // también marcamos global para usuarios viejos
+    // tambiÃ©n marcamos global para usuarios viejos
     localStorage.setItem(STORAGE_TOUR, 'visto');
   }catch(e){}
 }
@@ -101,7 +101,7 @@ function marcarTourIconosVisto(userId){
 function getUsuarios(){ 
   try{
     const raw = JSON.parse(localStorage.getItem(STORAGE_USERS)||'[]');
-    // migración suave: asegurar campos nuevos
+    // migraciÃ³n suave: asegurar campos nuevos
     let changed=false;
     raw.forEach(u=>{
       if(!('ownerEmail' in u)){ u.ownerEmail = (u.email||'').toLowerCase()||null; changed=true; }
@@ -118,16 +118,47 @@ function saveUsuarios(u){
   localStorage.setItem(STORAGE_USERS, JSON.stringify(u)); 
   try{ if(window.scheduleUpload) window.scheduleUpload(); }catch(e){}
 }
-function getCurrentId(){ return localStorage.getItem(STORAGE_CURRENT); }
+function getCurrentId(){ 
+  let id = localStorage.getItem(STORAGE_CURRENT);
+  const users = getUsuariosSafe ? getUsuariosSafe() : getUsuarios();
+  if(!id && users.length>0){
+    // Auto-reparaciÃ³n: si no hay current pero hay usuarios, usar el primero
+    id = String(users[0].id);
+    try{ localStorage.setItem(STORAGE_CURRENT, id); }catch(e){}
+  } else if(id && users.length>0){
+    const existe = users.some(u=>String(u.id)===String(id));
+    if(!existe){
+      // El current apunta a un usuario borrado, restaurar al primero
+      id = String(users[0].id);
+      try{ localStorage.setItem(STORAGE_CURRENT, id); }catch(e){}
+      console.warn('âš ï¸ Current ID invÃ¡lido, restaurado a', users[0].name);
+    }
+  }
+  return localStorage.getItem(STORAGE_CURRENT); 
+}
 function setCurrentId(id){ 
-  localStorage.setItem(STORAGE_CURRENT, id); 
+  localStorage.setItem(STORAGE_CURRENT, String(id)); 
   try{ localStorage.setItem('ledger_last_manual_select', Date.now().toString()); }catch(e){}
   try{ if(window.scheduleUpload) window.scheduleUpload(); }catch(e){}
 }
 function getUsuarioActual(){
   const id = getCurrentId();
-  if(!id) return null;
-  return getUsuarios().find(u=>String(u.id)===String(id)) || null;
+  const users = getUsuariosSafe ? getUsuariosSafe() : getUsuarios();
+  if(users.length===0) return null;
+  if(!id){
+    // Sin current pero hay usuarios, devolver primero
+    try{ localStorage.setItem(STORAGE_CURRENT, String(users[0].id)); }catch(e){}
+    return users[0];
+  }
+  const found = users.find(u=>String(u.id)===String(id));
+  if(found) return found;
+  // Fallback: si no se encontrÃ³, usar primero y corregir current
+  try{ localStorage.setItem(STORAGE_CURRENT, String(users[0].id)); }catch(e){}
+  return users[0];
+}
+// Helper seguro para firebase
+function getUsuariosSafe(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_USERS)||'[]'); }catch(e){ return []; }
 }
 function updateUsuarioData(userId, updater){
   const users = getUsuarios();
@@ -199,7 +230,7 @@ function outsideClickListenerMenu(e){
   // Ignorar clicks en el boton hamburguesa
   if(e.target.closest && e.target.closest('[onclick*="toggleMobileMenu"]')) return;
   if(e.target.closest && e.target.closest('#mobileMenu')) return;
-  // Si tocó fuera del menu, cerrar
+  // Si tocÃ³ fuera del menu, cerrar
   if(!menu.contains(e.target)){
     cerrarMobileMenu();
   }
@@ -225,16 +256,16 @@ function actualizarVisibilidadCamposSync(){
   if(cb.checked){
     if(campos) campos.classList.add('hidden');
     if(infoSync) infoSync.classList.remove('hidden');
-    if(sub) sub.textContent = hasCloud ? 'Respaldo y multi-dispositivo • Activo' : 'Se conectará a la nube al crear';
+    if(sub) sub.textContent = hasCloud ? 'Respaldo y multi-dispositivo â€¢ Activo' : 'Se conectarÃ¡ a la nube al crear';
     if(icon) { icon.innerHTML = ICON_CLOUD_WHITE; icon.className = 'w-9 h-9 rounded-[10px] bg-[#0A0A0A] text-white grid place-items-center shadow-sm'; }
-    if(hint && !hasCloud){ hint.textContent = 'Al crear se abrirá el login de Google para sincronizar.'; hint.classList.remove('hidden'); }
+    if(hint && !hasCloud){ hint.textContent = 'Al crear se abrirÃ¡ el login de Google para sincronizar.'; hint.classList.remove('hidden'); }
     if(hint && hasCloud) hint.classList.add('hidden');
   } else {
     if(campos) campos.classList.remove('hidden');
     if(infoSync) infoSync.classList.add('hidden');
-    if(sub) sub.textContent = 'Se guardará solo en este dispositivo (local)';
+    if(sub) sub.textContent = 'Se guardarÃ¡ solo en este dispositivo (local)';
     if(icon) { icon.innerHTML = ICON_LOCK; icon.className = 'w-9 h-9 rounded-[10px] bg-white border border-line grid place-items-center shadow-sm'; }
-    if(hint) { hint.textContent = 'Se guardará solo en este dispositivo (local)'; hint.classList.remove('hidden'); if(!hasCloud){ hint.textContent = 'Conectá Google para sincronizar. Si lo activás ahora, te pediremos iniciar sesión.'; } }
+    if(hint) { hint.textContent = 'Se guardarÃ¡ solo en este dispositivo (local)'; hint.classList.remove('hidden'); if(!hasCloud){ hint.textContent = 'ConectÃ¡ Google para sincronizar. Si lo activÃ¡s ahora, te pediremos iniciar sesiÃ³n.'; } }
   }
 }
 
@@ -272,7 +303,7 @@ function abrirModalAgregarUsuario(){
     // MODO SINCRONIZADO
     if(stateNoSync) stateNoSync.classList.add('hidden');
     if(stateSync) stateSync.classList.remove('hidden');
-    if(subtitle) subtitle.textContent='Sesión activa';
+    if(subtitle) subtitle.textContent='SesiÃ³n activa';
     try{
       var u = window.firebaseAuth.currentUser || cloudUser;
       var email = u?.email || '';
@@ -286,7 +317,7 @@ function abrirModalAgregarUsuario(){
     // MODO NO SINCRONIZADO
     if(stateSync) stateSync.classList.add('hidden');
     if(stateNoSync) stateNoSync.classList.remove('hidden');
-    if(subtitle) subtitle.textContent='Elige una opción';
+    if(subtitle) subtitle.textContent='Elige una opciÃ³n';
   }
 
   var modal = document.getElementById('modalAgregarUsuario');
@@ -297,7 +328,7 @@ function cerrarModalAgregarUsuario(){
   if(m) m.classList.add('hidden');
 }
 
-// --- FUNCIONES QUE FALTABAN (causa del modal vacío) ---
+// --- FUNCIONES QUE FALTABAN (causa del modal vacÃ­o) ---
 function mostrarFormLocal(){
   var hasCloud = false;
   try{ hasCloud = !!(window.firebaseAuth && window.firebaseAuth.currentUser); }catch(e){}
@@ -340,7 +371,7 @@ function accionLoginGoogleDesdeModal(){
 }
 function cerrarSesionDesdeModal(){
   cerrarModalAgregarUsuario();
-  // usa el modal de confirmación existente si existe
+  // usa el modal de confirmaciÃ³n existente si existe
   var modalDesc=document.getElementById('modalDesconectarNube');
   if(modalDesc){ modalDesc.classList.remove('hidden'); }
   else if(typeof logoutCloud==='function'){ logoutCloud(); }
@@ -359,7 +390,7 @@ function crearUsuarioLocal(){
   var note = noteEl ? noteEl.value.trim() : '';
 
   if(!name){
-    if(errorEl){ errorEl.textContent='⚠️ Poné un nombre'; errorEl.classList.remove('hidden'); }
+    if(errorEl){ errorEl.textContent='âš ï¸ PonÃ© un nombre'; errorEl.classList.remove('hidden'); }
     if(nameEl) nameEl.focus();
     return;
   }
@@ -405,7 +436,7 @@ function mostrarModalLoginSync(nombre, email){
   const emailEl = document.getElementById('loginSyncUserEmail');
   const initialEl = document.getElementById('loginSyncInitial');
   if(nameEl) nameEl.textContent = nombre || 'este usuario';
-  if(emailEl) emailEl.textContent = email ? email + ' • modo local' : 'Usuario creado en modo local';
+  if(emailEl) emailEl.textContent = email ? email + ' â€¢ modo local' : 'Usuario creado en modo local';
   if(initialEl) initialEl.textContent = (nombre||'U')[0].toUpperCase();
   if(modal){ modal.classList.remove('hidden'); modal.classList.add('flex'); }
 }
@@ -428,7 +459,7 @@ function abrirModalCambiarUsuario(){ renderListaCambiarUsuario(); document.getEl
 function cerrarModalCambiarUsuario(){ document.getElementById('modalCambiarUsuario').classList.add('hidden'); }
 function abrirModalVerUsuario(){
   const u = getUsuarioActual();
-  if(!u){ alert('Seleccioná un usuario primero'); return; }
+  if(!u){ alert('SeleccionÃ¡ un usuario primero'); return; }
   document.getElementById('viewUserInitial').innerText = (u.name||'?').charAt(0).toUpperCase();
   document.getElementById('viewUserName').innerText = u.name;
   document.getElementById('viewUserEmail').innerText = u.email||'Sin email';
@@ -463,27 +494,27 @@ function crearUsuario(){
   let note = noteEl ? noteEl.value.trim() : '';
   if(!syncWanted){
     if(!name){
-      if(errorEl){ errorEl.textContent='⚠️ Poné un nombre'; errorEl.classList.remove('hidden'); }
-      else alert('Poné un nombre');
+      if(errorEl){ errorEl.textContent='âš ï¸ PonÃ© un nombre'; errorEl.classList.remove('hidden'); }
+      else alert('PonÃ© un nombre');
       if(nameEl) nameEl.focus();
       return;
     }
   } else {
-    // sync activo: si no hay nombre, lo dejamos vacío para que lo reemplace Google
-    // note también opcional y se ignora si sync activo (se usa nota por defecto)
+    // sync activo: si no hay nombre, lo dejamos vacÃ­o para que lo reemplace Google
+    // note tambiÃ©n opcional y se ignora si sync activo (se usa nota por defecto)
     if(!name){
       try{
         const gName = window.firebaseAuth?.currentUser?.displayName || window.firebaseAuth?.currentUser?.email?.split('@')[0] || '';
         if(gName) name = gName;
       }catch(e){}
     }
-    // si aun vacío, usar placeholder temporal, luego se reemplaza con nombre de Google
+    // si aun vacÃ­o, usar placeholder temporal, luego se reemplaza con nombre de Google
     if(!name) name = 'Usuario';
   }
 
   if(errorEl){ errorEl.classList.add('hidden'); errorEl.textContent=''; }
 
-  // Verificar si hay sesión de Google
+  // Verificar si hay sesiÃ³n de Google
   let currentEmail = '';
   let currentUid = null;
   try{
@@ -593,15 +624,15 @@ function elegirMailSync(opcion){
   if(!pending) return;
   const { name, note } = pending;
   if(opcion==='mismo'){
-    // USUARIO ACTUAL: si está sincronizado, solo sincroniza con mail actual
+    // USUARIO ACTUAL: si estÃ¡ sincronizado, solo sincroniza con mail actual
     let mail = '';
     try{ mail = window.firebaseAuth?.currentUser?.email || ''; }catch(e){}
-    console.log("➡️ Sincronizando con usuario actual:", mail);
+    console.log("âž¡ï¸ Sincronizando con usuario actual:", mail);
     cerrarModalElegirMail();
     finalizarCreacionUsuario(name, note, mail, 'cloud');
   } else {
     // USUARIO NUEVO: mostrar modal aviso debes cerrar sesion
-    console.log("➡️ Usuario nuevo - mostrar aviso cierre sesion");
+    console.log("âž¡ï¸ Usuario nuevo - mostrar aviso cierre sesion");
     const modal1 = document.getElementById('modalElegirMailSync');
     const modal2 = document.getElementById('modalCambiarMail');
     const actual = window.firebaseAuth?.currentUser?.email || '';
@@ -619,20 +650,20 @@ function volverAUsuarioActual(){
   // volver al modal 1 o directo a crear con usuario actual
   const m2=document.getElementById('modalCambiarMail');
   if(m2){ m2.classList.add('hidden'); m2.classList.remove('flex'); }
-  // volver a lógica de mismo usuario
+  // volver a lÃ³gica de mismo usuario
   elegirMailSync('mismo');
 }
 function agregarCuentaConNuevoMail(){ 
   // FIX: crear cuenta con nuevo mail sin pedir nombre
   const pending = window._pendingNewUser || {};
   const note = pending.note || document.getElementById('newUserNote')?.value || '';
-  window._pendingNewUser = { name: '', note: note }; // nombre vacío, se tomará de Google
+  window._pendingNewUser = { name: '', note: note }; // nombre vacÃ­o, se tomarÃ¡ de Google
   cerrarModalAgregarUsuario(); 
   const actual = window.firebaseAuth?.currentUser?.email||null; 
   if(actual){ 
     if(typeof abrirModalCambiarMail==='function') abrirModalCambiarMail(); 
   } else { 
-    // si no hay sesión, login directo con Google sin pedir nombre
+    // si no hay sesiÃ³n, login directo con Google sin pedir nombre
     (async ()=>{
       try{
         const { GoogleAuthProvider, signInWithPopup } = await import("https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js");
@@ -660,7 +691,7 @@ function confirmarCambiarMail(){
   const pending = window._pendingNewUser;
   // FIX: si es con nuevo mail, NO usamos el nombre escrito, usamos el de Google
   const note = pending?.note || '';
-  console.log("🔄 Cerrando sesión actual para sincronización con mail nuevo - sin pedir nombre...");
+  console.log("ðŸ”„ Cerrando sesiÃ³n actual para sincronizaciÃ³n con mail nuevo - sin pedir nombre...");
   cerrarModalCambiarMail();
   cerrarModalAgregarUsuario();
   (async ()=>{
@@ -670,7 +701,7 @@ function confirmarCambiarMail(){
         try{ const { signOut } = await import("https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js"); await signOut(authInst); }catch(e){ console.warn(e); }
       }
       try{
-        // Guardamos solo nota, no nombre, porque nombre vendrá de Google
+        // Guardamos solo nota, no nombre, porque nombre vendrÃ¡ de Google
         localStorage.setItem('ledger_pending_note', note);
         localStorage.setItem('ledger_switch_account','1');
       }catch(e){}
@@ -681,9 +712,9 @@ function confirmarCambiarMail(){
       const result = await signInWithPopup(window.firebaseAuth, freshProvider);
       const newMail = result?.user?.email || window.firebaseAuth?.currentUser?.email || '';
       const googleName = result?.user?.displayName || window.firebaseAuth?.currentUser?.displayName || '';
-      // Nombre = nombre de Google o primera parte del mail, NO lo que escribió antes
+      // Nombre = nombre de Google o primera parte del mail, NO lo que escribiÃ³ antes
       const finalName = (googleName || newMail.split('@')[0] || 'Mi perfil').trim();
-      console.log("✅ Nuevo login con:", newMail, " nombre:", finalName);
+      console.log("âœ… Nuevo login con:", newMail, " nombre:", finalName);
       localStorage.removeItem('ledger_switch_account');
       localStorage.removeItem('ledger_pending_profile');
       // Crear usuario directamente con mail, sin pedir nombre
@@ -715,7 +746,7 @@ window.confirmarCambiarMail = confirmarCambiarMail;
 
 
 
-// Asegurar exposición global de funciones críticas para onclick
+// Asegurar exposiciÃ³n global de funciones crÃ­ticas para onclick
 try{
   if(typeof abrirModalAgregarUsuario!=='undefined') window.abrirModalAgregarUsuario = abrirModalAgregarUsuario;
   if(typeof cerrarModalAgregarUsuario!=='undefined') window.cerrarModalAgregarUsuario = cerrarModalAgregarUsuario;
@@ -739,7 +770,7 @@ function updateSyncCards(){
   } else {
     cardLocal.className = "relative flex flex-col gap-2 p-3 rounded-[12px] border-2 border-[#0A0A0A] bg-white cursor-pointer transition-all";
     cardCloud.className = "relative flex flex-col gap-2 p-3 rounded-[12px] border border-[#E5E5E3] bg-[#FAFAF8] cursor-pointer transition-all";
-    if(btn) btn.innerHTML = "<span>Continuar</span><span>→</span>";
+    if(btn) btn.innerHTML = "<span>Continuar</span><span>â†’</span>";
   }
 }
 function handleBienvenidaSubmit(e){
@@ -761,7 +792,7 @@ function handleBienvenidaSubmit(e){
   } else {
     // LOCAL: ir al modal Agregar usuario YA EXISTENTE
     document.getElementById('modalBienvenida').classList.add('hidden');
-    // Usar la función ya existente que limpia campos y abre el modal
+    // Usar la funciÃ³n ya existente que limpia campos y abre el modal
     if(typeof abrirModalAgregarUsuario === 'function'){
       abrirModalAgregarUsuario();
     } else {
@@ -798,7 +829,17 @@ function crearUsuarioObligatorio(e){
 }
 
 function cambiarUsuario(id){
-  setCurrentId(id); cerrarModalCambiarUsuario(); cerrarModalUsuarios(); refrescarTodo();
+  try{
+    console.log('ðŸ”„ Cambiando usuario a', id);
+    setCurrentId(String(id));
+    // Cerrar modales si existen
+    try{ cerrarModalCambiarUsuario(); }catch(e){}
+    try{ cerrarModalUsuarios(); }catch(e){}
+    // Forzar refresco
+    setTimeout(()=>{ 
+      try{ refrescarTodo(); }catch(e){ console.error(e); location.reload(); }
+    }, 50);
+  }catch(e){ console.error('Error cambiarUsuario', e); }
 }
 
 let _userToDeleteId = null;
@@ -822,7 +863,7 @@ function confirmarEliminarUsuario(){
   const wasCurrent = String(getCurrentId())===String(_userToDeleteId);
   const deletedUser = getUsuarios().find(x=>String(x.id)===String(_userToDeleteId));
   saveUsuarios(users);
-  // Si era sincronizado, borrar también de Firebase para que no vuelva
+  // Si era sincronizado, borrar tambiÃ©n de Firebase para que no vuelva
   try{
     if(deletedUser && deletedUser.syncMode!=='local' && window.firebaseAuth?.currentUser){
       const idBorrar = String(_userToDeleteId);
@@ -838,7 +879,7 @@ function confirmarEliminarUsuario(){
       if(typeof uploadToCloud==='function'){
         setTimeout(()=>{ uploadToCloud(); }, 300);
       }
-      console.log("🗑️ Usuario sincronizado borrado y marcado para no restaurar:", idBorrar);
+      console.log("ðŸ—‘ï¸ Usuario sincronizado borrado y marcado para no restaurar:", idBorrar);
     }
   }catch(e){ console.warn(e); }
   cerrarModalEliminarUsuario();
@@ -869,7 +910,7 @@ function eliminarUsuarioPorId(id){
 
 function renderListaUsuariosModal(){
   const cont = document.getElementById('lista-usuarios-modal'); const users = getUsuarios(); const curr = getCurrentId();
-  if(users.length===0){ cont.innerHTML=`<p class="text-[13px] text-[#9A9A98] text-center py-8">No hay usuarios. Creá el primero.</p>`; return; }
+  if(users.length===0){ cont.innerHTML=`<p class="text-[13px] text-[#9A9A98] text-center py-8">No hay usuarios. CreÃ¡ el primero.</p>`; return; }
   cont.innerHTML = users.map(u=>`
     <div class="flex items-center justify-between p-3 rounded-xl border ${String(curr)===String(u.id)?'border-ink bg-stone':'border-line bg-white'}">
       <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -878,14 +919,14 @@ function renderListaUsuariosModal(){
           <div class="flex items-center gap-1.5 flex-wrap">
             <p class="text-[13px] font-medium truncate">${u.name}</p>
             ${u.ownerEmail||u.email?`<span class="text-[8px] px-1.5 py-0.5 rounded-full bg-[#E8F5E9] text-[#2E7D32] font-bold tracking-wide shrink-0">BD propia</span>`:''}
-            ${u.syncMode==='cloud'?'<span class="text-[8px] px-1 py-0.5 rounded-full bg-[#E0F2FF] text-[#0A84FF] shrink-0">☁️</span>':''}
+            ${u.syncMode==='cloud'?'<span class="text-[8px] px-1 py-0.5 rounded-full bg-[#E0F2FF] text-[#0A84FF] shrink-0">â˜ï¸</span>':''}
           </div>
-          <p class="text-[11px] text-[#9A9A98] truncate">${u.email||'Sin email'} · ${(u.gastos||[]).length} mov. · ${(u.deudas||[]).length} deudas</p>
+          <p class="text-[11px] text-[#9A9A98] truncate">${u.email||'Sin email'} Â· ${(u.gastos||[]).length} mov. Â· ${(u.deudas||[]).length} deudas</p>
         </div>
       </div>
       <div class="flex gap-1 shrink-0 ml-2">
         <button onclick="cambiarUsuario(${u.id})" class="h-8 px-3 rounded-full bg-ink text-white text-[11px]">Usar</button>
-        <button onclick="eliminarUsuarioPorId(${u.id})" class="w-8 h-8 rounded-full bg-white border border-line grid place-items-center text-[11px] text-[#FF3B30]">✕</button>
+        <button onclick="eliminarUsuarioPorId(${u.id})" class="w-8 h-8 rounded-full bg-white border border-line grid place-items-center text-[11px] text-[#FF3B30]">âœ•</button>
       </div>
     </div>`).join('');
 }
@@ -913,11 +954,11 @@ function refrescarHeaderUsuario(){
   if(!u){
     if(initialEl) initialEl.innerText='-';
     if(nameEl) nameEl.innerText='Sin usuario';
-    if(emailEl) emailEl.innerText='Creá uno para empezar';
+    if(emailEl) emailEl.innerText='CreÃ¡ uno para empezar';
     if(initialMob) initialMob.innerText='-';
     if(nameMob) nameMob.innerText='Sin usuario';
-    if(emailMob) emailMob.innerText='Creá uno para empezar';
-    if(histEl) histEl.innerText='—';
+    if(emailMob) emailMob.innerText='CreÃ¡ uno para empezar';
+    if(histEl) histEl.innerText='â€”';
     if(saldoDetalle) saldoDetalle.innerText='Sin usuario seleccionado';
     document.getElementById('empty-state').classList.remove('hidden');
   } else {
@@ -928,11 +969,11 @@ function refrescarHeaderUsuario(){
     if(nameMob) nameMob.innerText = u.name;
     if(emailMob) emailMob.innerText = u.email||u.note||'Activo';
     if(histEl) histEl.innerText = u.name;
-    if(saldoDetalle) saldoDetalle.innerText = `${(u.gastos||[]).length} movimientos · ${u.email||'Cuenta personal'}`;
+    if(saldoDetalle) saldoDetalle.innerText = `${(u.gastos||[]).length} movimientos Â· ${u.email||'Cuenta personal'}`;
   }
 }
 
-// VALIDACIÓN EN TIEMPO REAL DEL MONTO Y SALDO DISPONIBLE
+// VALIDACIÃ“N EN TIEMPO REAL DEL MONTO Y SALDO DISPONIBLE
 function validarMontoDisponible(inputEl) {
   const u = getUsuarioActual();
   if(!u) return;
@@ -954,7 +995,7 @@ function validarMontoDisponible(inputEl) {
 
   if (saldoFuturo < 0 && sueldo > 0) {
     alertaEl.classList.remove('hidden');
-    document.getElementById('texto-alerta-negativa').innerText = `Atención: este movimiento dejará tu saldo en ${fmt(saldoFuturo)}.`;
+    document.getElementById('texto-alerta-negativa').innerText = `AtenciÃ³n: este movimiento dejarÃ¡ tu saldo en ${fmt(saldoFuturo)}.`;
   } else {
     alertaEl.classList.add('hidden');
   }
